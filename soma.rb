@@ -1,37 +1,29 @@
 require 'gosu'
-#require 'chipmunk'
 require_relative 'block.rb'
 
 module Settings
-  RES_X = 800
-  RES_Y = 500
+  RES_X = 1920
+  RES_Y = 1200
+  FULLSCREEN = true
 
   COLORS = {
-    red: 0xffff0000,
-    green: 0xff00ff00,
-    yellow: 0xffffff00,
-    none: 0xffffffff
+    red: Gosu::red,
+    green: Gosu::green,
+    none: Gosu::white
   }
 
   DEBUG = {
-    target: false
+    target_line: true,
+    target_log: true
   }
-
 end
 
 class GameWindow < Gosu::Window
   attr_accessor :space
 
-  #SUBSTEPS = 10
-
   def initialize
-    super(Settings::RES_X, Settings::RES_Y, false)
-    self.caption = "soma"
-
-    #@dt = (1.0/60.0)
-    #@space = CP::Space.new
-
-    #@space.gravity = CP::Vec2.new(0, 10)
+    super(Settings::RES_X, Settings::RES_Y, Settings::FULLSCREEN)
+    self.caption = "soma alpha nil"
 
     create_blocks(red: 6, green: 6)
   end
@@ -42,14 +34,6 @@ class GameWindow < Gosu::Window
 
   def update
     @blocks.each(&:move)
-
-    #SUBSTEPS.times do
-      #@blocks.each do |b|
-        # WE RESET THE FORCES BECAUSE THE WILL ACCUMULATE OVER THE SUBSTEPS OTHERWISE
-        #b.shape.body.reset_forces
-      #end
-      #@space.step(@dt)
-    #end
   end
 
   def needs_cursor?
