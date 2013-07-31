@@ -37,19 +37,7 @@ class GameWindow < Gosu::Window
     @space = CP::Space.new
     @space.damping = 0.9
 
-    #body = CP::Body.new(33.0, 33.0)
-
-    # shape_array = [CP::Vec2.new(-25.0, -25.0), CP::Vec2.new(-25.0, 25.0), CP::Vec2.new(25.0, 1.0), CP::Vec2.new(25.0, -1.0)]
-    # @shape = CP::Shape::Poly.new(body, shape_array, CP::Vec2.new(0,0))
-
-    # @shape.collision_type = :block
-
-    # @space.add_body(body)
-    # @space.add_shape(@shape)
-
-
-
-    create_blocks(red: 50, green: 50)
+    create_blocks(red: 20, green: 20)
   end
 
   def draw
@@ -57,31 +45,18 @@ class GameWindow < Gosu::Window
   end
 
   def update
-
     Settings::SUBSTEPS.times do
 
-
-      @blocks.each { |b| b.shape.body.reset_forces }
-
-      #@blocks.each(&:move)
-
-      #@blocks.sample.target(mouse_x, mouse_y) if button_down? Gosu::MsLeft
-
-      @blocks.each { |b| b.validate_position }
-
-      if button_down? Gosu::KbLeft
-        @blocks.first.turn_left
-      end
-      if button_down? Gosu::KbRight
-        @blocks.first.turn_right
+      @blocks.each do |block|
+        block.shape.body.reset_forces
+        block.move
+        block.validate_position
       end
 
-      if button_down? Gosu::KbUp
-        @blocks.first.accelerate
-      end
-
-
-
+      @blocks.first.accelerate if button_down? Gosu::KbUp
+      @blocks.first.turn_left if button_down? Gosu::KbLeft
+      @blocks.first.turn_right if button_down? Gosu::KbRight
+      @blocks.first.target(mouse_x, mouse_y) if button_down? Gosu::MsLeft
 
       @space.step(@dt)
     end
@@ -94,7 +69,6 @@ class GameWindow < Gosu::Window
 
   def button_down(id)
     close if id == Gosu::KbEscape
-    #@blocks.sample.target(mouse_x, mouse_y) if id == Gosu::MsLeft
   end
 
   def create_blocks hash = {}
@@ -103,8 +77,6 @@ class GameWindow < Gosu::Window
       count.times do
 
         body = CP::Body.new(10, 200)
-        #shape = CP::Shape::Circle.new(body, 25/2, CP::Vec2.new(0.0, 0.0))
-        #shape.collision_type = :block
 
         shape_array = [
           CP::Vec2.new(-16.0, -16.0),
@@ -112,6 +84,7 @@ class GameWindow < Gosu::Window
           CP::Vec2.new(16.0, 16.0),
           CP::Vec2.new(16.0, -16.0)
         ]
+
         shape = CP::Shape::Poly.new(body, shape_array, CP::Vec2.new(0,0))
 
         @space.add_body(body)
