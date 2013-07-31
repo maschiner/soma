@@ -1,10 +1,14 @@
-require 'chipmunk'
-
 class Block
-  attr_accessor :shape
+  include Settings
 
-  def initialize window, shape, options = {}
+  def initialize(window, space, options={})
     @window = window
+
+    self.register_to(space)
+
+    body.p = CP::Vec2.new(0.0, 0.0)
+    body.v = CP::Vec2.new(0.0, 0.0)
+    body.a = (3*Math::PI/2.0)
 
     @tarx = rand Settings::RES_X
     @tary = rand Settings::RES_Y
@@ -12,24 +16,47 @@ class Block
     @color = options[:color] || :none
     @image = Gosu::Image.new(window, 'media/block.png', false)
 
-    @shape = shape
-    @shape.body.p = CP::Vec2.new(0.0, 0.0)
-    @shape.body.v = CP::Vec2.new(0.0, 0.0)
-    @shape.body.a = (3*Math::PI/2.0)
+    self.warp(CP::Vec2.new(rand(RES_X),rand(RES_Y)))
 
     reset_target
   end
 
+  def body
+    @body ||= shape.body
+  end
+
+  def register_to(space)
+    space.add_body(body)
+    space.add_shape(shape)
+  end
+
+  def shape
+    @shape ||= CP::Shape::Poly.new(physical_body, shape_vectors, CP::Vec2.new(0,0))
+  end
+
+  def physical_body
+    CP::Body.new(10, 200)
+  end
+
+  def shape_vectors
+    shape_array = [
+      CP::Vec2.new(-16.0, -16.0),
+      CP::Vec2.new(-16.0, 16.0),
+      CP::Vec2.new(16.0, 16.0),
+      CP::Vec2.new(16.0, -16.0)
+    ]
+  end
+
   def warp(vect)
-    @shape.body.p = vect
+    body.p = vect
   end
 
   def draw
     @image.draw_rot(
-      @shape.body.p.x,
-      @shape.body.p.y,
+      body.p.x,
+      body.p.y,
       10,
-      @shape.body.a.radians_to_gosu,
+      body.a.radians_to_gosu,
       0.5, 0.5, 1, 1, Settings::COLORS[@color]
     )
     debug
@@ -37,9 +64,9 @@ class Block
 
   def move
     if @tarx && @tary
-      if Gosu::distance(@shape.body.p.x, @shape.body.p.y, @tarx, @tary) > 50
-        @shape.body.a =
-          Gosu::angle_diff(@shape.body.a, Gosu::angle(@shape.body.p.x, @shape.body.p.y, @tarx, @tary)) /
+      if Gosu::distance(body.p.x, body.p.y, @tarx, @tary) > 50
+        body.a =
+          Gosu::angle_diff(body.a, Gosu::angle(body.p.x, body.p.y, @tarx, @tary)) /
           Settings::SUBSTEPS
         accelerate
       else
@@ -53,15 +80,15 @@ class Block
   end
 
   def accelerate
-    @shape.body.apply_force((@shape.body.a.radians_to_vec2 * (3000.0/Settings::SUBSTEPS)), CP::Vec2.new(0.0, 0.0))
+    body.apply_force((body.a.radians_to_vec2 * (3000.0/Settings::SUBSTEPS)), CP::Vec2.new(0.0, 0.0))
   end
 
   def turn_left
-    @shape.body.t -= 400.0/Settings::SUBSTEPS
+    body.t -= 400.0/Settings::SUBSTEPS
   end
 
   def turn_right
-    @shape.body.t += 400.0/Settings::SUBSTEPS
+    body.t += 400.0/Settings::SUBSTEPS
   end
 
   def target x, y
@@ -69,16 +96,20 @@ class Block
   end
 
   def validate_position
-    l_position = CP::Vec2.new(@shape.body.p.x % Settings::RES_X, @shape.body.p.y % Settings::RES_Y)
-    @shape.body.p = l_position
+    l_position = CP::Vec2.new(body.p.x % Settings::RES_X, body.p.y % Settings::RES_Y)
+    body.p = l_position
+  end
+
+  def reset_forces
+    body.reset_forces
   end
 
   def debug
     if Settings::DEBUG[:target_line]
       if @tarx && @tary
-        if Gosu::distance(@shape.body.p.x, @shape.body.p.y, @tarx, @tary) > 50
+        if Gosu::distance(body.p.x, body.p.y, @tarx, @tary) > 50
           begin
-            @window.draw_line(@shape.body.p.x, @shape.body.p.y, Gosu::white, @tarx, @tary, Gosu::white)
+            @window.draw_line(body.p.x, body.p.y, Gosu::white, @tarx, @tary, Gosu::white)
           rescue
             # draw_line crashes when x or y margins are within 2 pixels
           end
