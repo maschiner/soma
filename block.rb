@@ -1,10 +1,11 @@
 class Block
   include Settings
+  include Colors
 
   MASS = 10
   MOMENT = 100_000
 
-  attr_reader :window
+  attr_reader :window, :color
   attr_accessor :target
 
   def initialize(window, space, options={})
@@ -17,7 +18,7 @@ class Block
     body.a = (3*Math::PI/2.0)
 
     @image = Gosu::Image.new(window, 'media/block.png', false)
-    @color = options[:color] || :none
+    @color = self.send(options[:color] || :white)
   end
 
   def body
@@ -56,7 +57,7 @@ class Block
       body.p.y,
       10,
       body.a.radians_to_gosu,
-      0.5, 0.5, 1, 1, Settings::COLORS[@color]
+      0.5, 0.5, 1, 1, color
     )
     debug
   end

@@ -4,6 +4,7 @@ require 'chipmunk'
 
 require_relative 'init.rb'
 require_relative 'settings.rb'
+require_relative 'colors.rb'
 require_relative 'block.rb'
 
 class GameWindow < Gosu::Window
@@ -18,7 +19,7 @@ class GameWindow < Gosu::Window
     @space = CP::Space.new
     @space.damping = 1
 
-    create_blocks(none: 1, red: 100, green: 100)
+    create_blocks(white: 1, red: 100, green: 100)
   end
 
   def draw

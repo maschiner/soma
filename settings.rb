@@ -7,12 +7,6 @@ module Settings
 
   CAPTION = "soma alpha nil"
 
-  COLORS = {
-    red: Gosu::red,
-    green: Gosu::green,
-    none: Gosu::white
-  }
-
   DEBUG = {
     target_line: true,
     target_log: true
