@@ -1,24 +1,23 @@
 class Block
   include Settings
 
+  MASS = 10
+  MOMENT = 100_000
+
+  attr_reader :window
+  attr_accessor :target
+
   def initialize(window, space, options={})
     @window = window
 
     self.register_to(space)
 
-    body.p = CP::Vec2.new(0.0, 0.0)
+    body.p = CP::Vec2.new(rand(RES_X), rand(RES_Y))
     body.v = CP::Vec2.new(0.0, 0.0)
     body.a = (3*Math::PI/2.0)
 
-    @tarx = rand Settings::RES_X
-    @tary = rand Settings::RES_Y
-
-    @color = options[:color] || :none
     @image = Gosu::Image.new(window, 'media/block.png', false)
-
-    self.warp(CP::Vec2.new(rand(RES_X),rand(RES_Y)))
-
-    reset_target
+    @color = options[:color] || :none
   end
 
   def body
@@ -35,7 +34,7 @@ class Block
   end
 
   def physical_body
-    CP::Body.new(10, 200)
+    CP::Body.new(MASS, MOMENT)
   end
 
   def shape_vectors
@@ -63,20 +62,24 @@ class Block
   end
 
   def move
-    if @tarx && @tary
-      if Gosu::distance(body.p.x, body.p.y, @tarx, @tary) > 50
-        body.a =
-          Gosu::angle_diff(body.a, Gosu::angle(body.p.x, body.p.y, @tarx, @tary)) /
-          Settings::SUBSTEPS
-        accelerate
-      else
-        reset_target
-      end
+    move_to_target if target
+  end
+
+  def move_to_target
+    if body.p.near?(target, 50)
+      reset_target
+    else
+      turn_to(target)
+      accelerate
     end
   end
 
+  def turn_to(vect)
+    body.a = (vect - body.p).to_angle
+  end
+
   def reset_target
-    @tarx = @tary = nil
+    @target = nil
   end
 
   def accelerate
@@ -91,10 +94,6 @@ class Block
     body.t += 400.0/Settings::SUBSTEPS
   end
 
-  def target x, y
-    @tarx, @tary = x, y
-  end
-
   def validate_position
     l_position = CP::Vec2.new(body.p.x % Settings::RES_X, body.p.y % Settings::RES_Y)
     body.p = l_position
@@ -105,14 +104,12 @@ class Block
   end
 
   def debug
-    if Settings::DEBUG[:target_line]
-      if @tarx && @tary
-        if Gosu::distance(body.p.x, body.p.y, @tarx, @tary) > 50
-          begin
-            @window.draw_line(body.p.x, body.p.y, Gosu::white, @tarx, @tary, Gosu::white)
-          rescue
-            # draw_line crashes when x or y margins are within 2 pixels
-          end
+    if DEBUG[:target_line]
+      if target && !body.p.near?(target, 50)
+        begin
+          window.draw_line(body.p.x, body.p.y, Gosu::white, target.x, target.y, Gosu::white)
+        rescue
+          # draw_line crashes when x or y margins are within 2 pixels
         end
       end
     end

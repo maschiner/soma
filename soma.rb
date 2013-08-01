@@ -36,7 +36,7 @@ class GameWindow < Gosu::Window
       @blocks.first.accelerate if button_down? Gosu::KbUp
       @blocks.first.turn_left if button_down? Gosu::KbLeft
       @blocks.first.turn_right if button_down? Gosu::KbRight
-      @blocks.first.target(mouse_x, mouse_y) if button_down? Gosu::MsLeft
+      @blocks.first.target = CP::Vec2.new(mouse_x, mouse_y) if button_down? Gosu::MsLeft
 
       @space.step(DT)
     end
