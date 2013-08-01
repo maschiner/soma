@@ -1,7 +1,8 @@
+require 'rubygems'
 require 'gosu'
 require 'chipmunk'
 
-require_relative 'initialize.rb'
+require_relative 'init.rb'
 require_relative 'settings.rb'
 require_relative 'block.rb'
 
