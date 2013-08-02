@@ -18,6 +18,7 @@ class GameWindow < Gosu::Window
     self.caption = CAPTION
 
     setup_space
+    @bubbles = []
 
     create_blocks(white: 1, red: 5, green: 5)
   end

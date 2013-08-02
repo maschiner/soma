@@ -1,7 +1,8 @@
 class Bubble
 
-  def initializ(center)
+  def initialize(center)
     @center = center
+    puts self.inspect
   end
 
 end
