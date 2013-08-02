@@ -15,7 +15,7 @@ class Block
 
     register_to(space)
 
-    body.p = CP::Vec2.new(rand(RES_X), rand(RES_Y))
+    body.p = options[:spawn]
     body.v = CP::Vec2.new(0, 0)
     body.a = rand(2 * Math::PI)
 

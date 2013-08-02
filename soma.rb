@@ -6,6 +6,7 @@ require_relative 'init.rb'
 require_relative 'settings.rb'
 require_relative 'colors.rb'
 require_relative 'block.rb'
+require_relative 'bubble.rb'
 
 class GameWindow < Gosu::Window
   include Settings
@@ -18,7 +19,7 @@ class GameWindow < Gosu::Window
 
     setup_space
 
-    create_blocks(white: 1, red: 100, green: 100)
+    create_blocks(white: 1, red: 5, green: 5)
   end
 
   def setup_space
@@ -54,7 +55,11 @@ class GameWindow < Gosu::Window
     end
 
     if button_down? Gosu::MsLeft
-      blocks.first.target = CP::Vec2.new(mouse_x, mouse_y)
+      blocks.first.target = mouse_pos
+    end
+
+    if button_down? Gosu::MsRight
+      create_bubble
     end
 
     if button_down? Gosu::KbEscape
@@ -62,10 +67,26 @@ class GameWindow < Gosu::Window
     end
   end
 
+  def create_bubble
+    @bubbles << Bubble.new(mouse_pos)
+  end
+
   def create_blocks(options={})
     @blocks = options.each_with_object([]) do |(color, count), blocks|
-      count.times { blocks << Block.new(self, space, color: color) }
+      count.times { blocks << Block.new(self, space, color: color, spawn: center_pos) }
     end
+  end
+
+  def mouse_pos
+    CP::Vec2.new(mouse_x, mouse_y)
+  end
+
+  def center_pos
+    CP::Vec2.new(RES_X / 2, RES_Y / 2)
+  end
+
+  def random_pos
+    CP::Vec2.new(rand(RES_X), rand(RES_Y))
   end
 
 end
