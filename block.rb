@@ -4,6 +4,8 @@ class Block
 
   MASS = 10
   MOMENT = 100_000
+  Z_INDEX = 1
+  DRAW_SETTINGS = [0.5, 0.5, 1, 1]
 
   attr_reader :window, :color
   attr_accessor :target
@@ -11,11 +13,11 @@ class Block
   def initialize(window, space, options={})
     @window = window
 
-    self.register_to(space)
+    register_to(space)
 
     body.p = CP::Vec2.new(rand(RES_X), rand(RES_Y))
-    body.v = CP::Vec2.new(0.0, 0.0)
-    body.a = (3*Math::PI/2.0)
+    body.v = CP::Vec2.new(0, 0)
+    body.a = rand(2 * Math::PI)
 
     @image = Gosu::Image.new(window, 'media/block.png', false)
     @color = self.send(options[:color] || :white)
@@ -47,23 +49,22 @@ class Block
     ]
   end
 
-  def warp(vect)
-    body.p = vect
-  end
-
   def draw
     @image.draw_rot(
       body.p.x,
       body.p.y,
-      10,
+      Z_INDEX,
       body.a.radians_to_gosu,
-      0.5, 0.5, 1, 1, color
+      *DRAW_SETTINGS,
+      color
     )
     debug
   end
 
   def move
+    reset_forces
     move_to_target if target
+    validate_position
   end
 
   def move_to_target
@@ -84,20 +85,23 @@ class Block
   end
 
   def accelerate
-    body.apply_force((body.a.radians_to_vec2 * (3000.0/Settings::SUBSTEPS)), CP::Vec2.new(0.0, 0.0))
+    body.apply_force(
+      body.a.radians_to_vec2 * 3000.0 / SUBSTEPS,
+      CP::Vec2.new(0, 0)
+    )
   end
 
   def turn_left
-    body.t -= 400.0/Settings::SUBSTEPS
+    body.t -= 400.0 / SUBSTEPS
   end
 
   def turn_right
-    body.t += 400.0/Settings::SUBSTEPS
+    body.t += 400.0 / SUBSTEPS
   end
 
   def validate_position
-    l_position = CP::Vec2.new(body.p.x % Settings::RES_X, body.p.y % Settings::RES_Y)
-    body.p = l_position
+    body.p.x %= RES_X
+    body.p.y %= RES_Y
   end
 
   def reset_forces
@@ -108,7 +112,10 @@ class Block
     if DEBUG[:target_line]
       if target && !body.p.near?(target, 50)
         begin
-          window.draw_line(body.p.x, body.p.y, Gosu::white, target.x, target.y, Gosu::white)
+          window.draw_line(
+            body.p.x, body.p.y, white,
+            target.x, target.y, white
+          )
         rescue
           # draw_line crashes when x or y margins are within 2 pixels
         end

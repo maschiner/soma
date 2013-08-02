@@ -10,50 +10,61 @@ require_relative 'block.rb'
 class GameWindow < Gosu::Window
   include Settings
 
-  attr_reader :space
+  attr_reader :space, :blocks
 
   def initialize
     super(RES_X, RES_Y, FULLSCREEN)
     self.caption = CAPTION
 
-    @space = CP::Space.new
-    @space.damping = 1
+    setup_space
 
     create_blocks(white: 1, red: 100, green: 100)
   end
 
+  def setup_space
+    @space = CP::Space.new
+    space.damping = DAMPING
+  end
+
   def draw
-    @blocks.each(&:draw)
+    blocks.each(&:draw)
   end
 
   def update
-    Settings::SUBSTEPS.times do
+    SUBSTEPS.times do
 
-      @blocks.each do |block|
-        block.reset_forces
-        block.move
-        block.validate_position
-      end
+      blocks.each(&:move)
+      listen_for_actions
 
-      @blocks.first.accelerate if button_down? Gosu::KbUp
-      @blocks.first.turn_left if button_down? Gosu::KbLeft
-      @blocks.first.turn_right if button_down? Gosu::KbRight
-      @blocks.first.target = CP::Vec2.new(mouse_x, mouse_y) if button_down? Gosu::MsLeft
-
-      @space.step(DT)
+      space.step(DT)
     end
-
   end
 
-  def button_down(id)
-    close if id == Gosu::KbEscape
+  def listen_for_actions
+    if button_down? Gosu::KbUp
+      blocks.first.accelerate
+    end
+
+    if button_down? Gosu::KbLeft
+      blocks.first.turn_left
+    end
+
+    if button_down? Gosu::KbRight
+      blocks.first.turn_right
+    end
+
+    if button_down? Gosu::MsLeft
+      blocks.first.target = CP::Vec2.new(mouse_x, mouse_y)
+    end
+
+    if button_down? Gosu::KbEscape
+      close
+    end
   end
 
   def create_blocks(options={})
     @blocks = options.each_with_object([]) do |(color, count), blocks|
-      count.times do
-        blocks << Block.new(self, space, color: color)
-      end
+      count.times { blocks << Block.new(self, space, color: color) }
     end
   end
 
