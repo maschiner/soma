@@ -3,6 +3,8 @@ require 'gosu'
 require 'chingu'
 require 'chipmunk'
 
+require_relative "init/settings.rb"
+
 Dir[File.join(".", "**/*.rb")].each { |file| require file }
 
 include Gosu
@@ -12,7 +14,6 @@ class Soma < Chingu::Window
 
   def initialize
     super(RES_X, RES_Y, FULLSCREEN)
-    self.caption = CAPTION
 
     push_game_state(Menu)
 

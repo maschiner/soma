@@ -1,6 +1,5 @@
 class Level < Chingu::GameState
-  include Settings
-  include Colors
+  include Helpers
 
   attr_reader :space, :blocks
 
@@ -34,10 +33,7 @@ class Level < Chingu::GameState
   end
 
   def setup
-    Block.each do |block|
-      block.reset
-      block.position = center_pos
-    end
+    Block.each(&:reset)
   end
 
   def create_blocks(options={})
@@ -45,7 +41,8 @@ class Level < Chingu::GameState
       count.times do
         Block.create(
           space: space,
-          spawn: center_pos,
+          position: center_pos,
+          angle: random_angle,
           color: self.send(color)
         )
       end
