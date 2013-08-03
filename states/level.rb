@@ -1,18 +1,11 @@
 class Level < Chingu::GameState
   include Helpers
 
-  attr_reader :space, :blocks
-
   def initialize(options={})
     super
-
-    @title = Chingu::Text.create(
-      text: "Level #{options[:level]} - Press 'R' to restart",
-      x: 20, y: 10, size: 30
-    )
-
     setup_space
 
+    render_title
     create_blocks(white: 1, green: 50, red: 50)
 
     self.input = {
@@ -25,14 +18,14 @@ class Level < Chingu::GameState
   def update
     super
 
-    $window.caption = "FPS: #{$window.fps} - GameObjects: #{game_objects.size}"
+    render_caption
 
     SUBSTEPS.times do
 
       Block.each(&:move)
       Bubble.each(&:run)
 
-      space.step(DT)
+      $space.step(DT)
     end
   end
 
@@ -45,7 +38,6 @@ class Level < Chingu::GameState
     options.each do |color, count|
       count.times do
         Block.create(
-          space: space,
           position: center_pos,
           angle: random_angle,
           color: self.send(color)
@@ -55,15 +47,23 @@ class Level < Chingu::GameState
   end
 
   def create_bubble
-    Bubble.create(
-      space: space,
-      center: mouse_pos
-    )
+    Bubble.create(center: mouse_pos)
   end
 
   def setup_space
-    @space = CP::Space.new
-    space.damping = DAMPING
+    $space = CP::Space.new
+    $space.damping = DAMPING
+  end
+
+  def render_title
+    @title = Chingu::Text.create(
+      x: 20, y: 10, size: 30,
+      text: "Level #{options[:level]} - Press 'R' to restart"
+    )
+  end
+
+  def render_caption
+    $window.caption = "FPS: #{$window.fps} - GameObjects: #{game_objects.size}"
   end
 
 end

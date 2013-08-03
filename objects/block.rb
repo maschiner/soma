@@ -19,8 +19,7 @@ class Block  < Chingu::GameObject
     @initial_position = options[:position]
     @initial_angle    = options[:angle]
 
-    register_to(options[:space])
-
+    register_to_space
     spawn
   end
 
@@ -58,9 +57,9 @@ class Block  < Chingu::GameObject
     self.angle = initial_angle
   end
 
-  def register_to(space)
-    space.add_body(body)
-    space.add_shape(shape)
+  def register_to_space
+    $space.add_body(body)
+    $space.add_shape(shape)
   end
 
   def body
