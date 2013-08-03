@@ -17,7 +17,8 @@ class Level < Chingu::GameState
 
     self.input = {
       r: -> { current_game_state.setup },
-      mouse_left: -> { Block.all.first.target = mouse_pos }
+      mouse_left: -> { Block.all.first.target = mouse_pos },
+      mouse_right: :create_bubble
     }
   end
 
@@ -27,13 +28,17 @@ class Level < Chingu::GameState
     $window.caption = "FPS: #{$window.fps} - GameObjects: #{game_objects.size}"
 
     SUBSTEPS.times do
+
       Block.each(&:move)
+      Bubble.each(&:run)
+
       space.step(DT)
     end
   end
 
   def setup
     Block.each(&:reset)
+    Bubble.destroy_all
   end
 
   def create_blocks(options={})
@@ -47,6 +52,13 @@ class Level < Chingu::GameState
         )
       end
     end
+  end
+
+  def create_bubble
+    Bubble.create(
+      space: space,
+      center: mouse_pos
+    )
   end
 
   def setup_space
