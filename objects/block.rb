@@ -153,10 +153,7 @@ class Block  < Chingu::GameObject
     if DEBUG[:target_line]
       if target && !body.p.near?(target, TARGET_RESET_DISTANCE)
         begin
-          $window.draw_line(
-            *position, white,
-            *target,   white
-          )
+          $window.draw_line(*position, white, *target, white)
         rescue
           # draw_line crashes when x or y margins are within 2 pixels
         end
