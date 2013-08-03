@@ -4,11 +4,11 @@ class Level < Chingu::GameState
 
   attr_reader :space, :blocks
 
-  def initialize(options = {})
+  def initialize(options={})
     super
 
     @title = Chingu::Text.create(
-      text: "Level #{options[:level]}",
+      text: "Level #{options[:level]} - Press 'R' to restart",
       x: 20, y: 10, size: 30
     )
 
@@ -35,7 +35,7 @@ class Level < Chingu::GameState
 
   def setup
     Block.each do |block|
-      block.stop
+      block.reset
       block.position = center_pos
     end
   end

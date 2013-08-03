@@ -4,11 +4,13 @@ class Block  < Chingu::GameObject
 
   MASS = 10
   MOMENT = 100_000
+
   Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
+  TARGET_RESET_DISTANCE = 50
 
-  attr_reader :color
   attr_accessor :target
+  attr_reader :image, :color
 
   def initialize(options={})
     super
@@ -16,12 +18,8 @@ class Block  < Chingu::GameObject
 
     register_to(options[:space])
 
-    position = options[:spawn]
-    body.a = rand(2 * Math::PI)
-  end
-
-  def stop
-    body.v = CP::Vec2.new(0, 0)
+    position = options[:position]
+    body.a = random_angle
   end
 
   def register_to(space)
@@ -29,16 +27,16 @@ class Block  < Chingu::GameObject
     space.add_shape(shape)
   end
 
-  def position=(vect)
-    body.p = vect
-  end
-
   def body
     @body ||= shape.body
   end
 
   def shape
-    @shape ||= CP::Shape::Poly.new(physical_body, shape_vectors, CP::Vec2.new(0,0))
+    @shape ||= CP::Shape::Poly.new(
+      physical_body,
+      shape_vectors,
+      CP::Vec2.new(0,0)
+    )
   end
 
   def physical_body
@@ -54,8 +52,12 @@ class Block  < Chingu::GameObject
     ]
   end
 
+  def position=(vect)
+    body.p = vect
+  end
+
   def draw
-    @image.draw_rot(
+    image.draw_rot(
       body.p.x,
       body.p.y,
       Z_INDEX,
@@ -73,7 +75,7 @@ class Block  < Chingu::GameObject
   end
 
   def move_to_target
-    if body.p.near?(target, 50)
+    if body.p.near?(target, TARGET_RESET_DISTANCE)
       reset_target
     else
       turn_to(target)
@@ -85,9 +87,6 @@ class Block  < Chingu::GameObject
     body.a = (vect - body.p).to_angle
   end
 
-  def reset_target
-    @target = nil
-  end
 
   def accelerate
     body.apply_force(
@@ -96,26 +95,32 @@ class Block  < Chingu::GameObject
     )
   end
 
-  def turn_left
-    body.t -= 400.0 / SUBSTEPS
-  end
-
-  def turn_right
-    body.t += 400.0 / SUBSTEPS
-  end
-
   def validate_position
     body.p.x %= RES_X
     body.p.y %= RES_Y
+  end
+
+  def reset
+    reset_forces
+    reset_velocity
+    reset_target
   end
 
   def reset_forces
     body.reset_forces
   end
 
+  def reset_velocity
+    body.v = CP::Vec2.new(0, 0)
+  end
+
+  def reset_target
+    @target = nil
+  end
+
   def debug
     if DEBUG[:target_line]
-      if target && !body.p.near?(target, 50)
+      if target && !body.p.near?(target, TARGET_RESET_DISTANCE)
         begin
           $window.draw_line(
             body.p.x, body.p.y, white,

@@ -5,7 +5,7 @@ module Settings
 
   DAMPING = 0.99
   SUBSTEPS = 6
-  DT = 1/60.0
+  DT = 1 / 60.0
 
   CAPTION = "soma alpha nil"
 
@@ -27,5 +27,9 @@ module Settings
 
   def random_pos
     CP::Vec2.new(rand(RES_X), rand(RES_Y))
+  end
+
+  def random_angle
+    rand(2 * Math::PI)
   end
 end
