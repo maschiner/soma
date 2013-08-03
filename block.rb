@@ -1,35 +1,40 @@
-class Block
+class Block  < Chingu::GameObject
   include Settings
   include Colors
 
   MASS = 10
   MOMENT = 100_000
-  Z_INDEX = 1
+  Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
 
-  attr_reader :window, :color
+  attr_reader :color
   attr_accessor :target
 
-  def initialize(window, space, options={})
-    @window = window
+  def initialize(options={})
+    super
+    @image = Image["block.png"]
 
-    register_to(space)
+    register_to(options[:space])
 
-    body.p = options[:spawn]
-    body.v = CP::Vec2.new(0, 0)
+    position = options[:spawn]
     body.a = rand(2 * Math::PI)
-
-    @image = Gosu::Image.new(window, 'media/block.png', false)
-    @color = self.send(options[:color] || :white)
   end
 
-  def body
-    @body ||= shape.body
+  def stop
+    body.v = CP::Vec2.new(0, 0)
   end
 
   def register_to(space)
     space.add_body(body)
     space.add_shape(shape)
+  end
+
+  def position=(vect)
+    body.p = vect
+  end
+
+  def body
+    @body ||= shape.body
   end
 
   def shape
@@ -112,7 +117,7 @@ class Block
     if DEBUG[:target_line]
       if target && !body.p.near?(target, 50)
         begin
-          window.draw_line(
+          $window.draw_line(
             body.p.x, body.p.y, white,
             target.x, target.y, white
           )
