@@ -2,7 +2,7 @@ class Block  < Chingu::GameObject
   include Helpers
 
   MASS = 10
-  MOMENT = 100_000
+  MOMENT = 1000
   ELASTICITY = 0.5
   ACCELERATION = 1000
 

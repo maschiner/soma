@@ -6,7 +6,7 @@ class Level < Chingu::GameState
     setup_space
 
     render_title
-    create_blocks(green: 20, red: 20)
+    create_blocks(green: 50, red: 50)
 
     self.input = {
       :r => :restart,

@@ -35,10 +35,10 @@ class Bubble < Chingu::GameObject
   end
 
   def run
-    packed? ? grow : shrink
-    destroy if collapsing?
-    destroy if encased?
+    destroy if encased? || collapsing?
     check_blocks
+    packed? ? grow : shrink
+
     validate_position
   end
 
@@ -75,8 +75,16 @@ class Bubble < Chingu::GameObject
   end
 
   def check_blocks
-    @blocks -= blocks_to_remove
+    remove_blocks
+    add_blocks
+  end
+
+  def add_blocks
     blocks_to_add.each { |block| add_block(block) }
+  end
+
+  def remove_blocks
+    @blocks -= blocks_to_remove
   end
 
   def add_block(block)
@@ -93,9 +101,7 @@ class Bubble < Chingu::GameObject
   end
 
   def blocks_to_remove
-    blocks.select do |block|
-      outside?(block.target)
-    end
+    blocks.select { |block| outside?(block.target) }
   end
 
   def core_radius
@@ -103,11 +109,9 @@ class Bubble < Chingu::GameObject
   end
 
   def register_blocks
-    @blocks = Block.select do |block|
-      inside?(block.position)
-    end
-
-    blocks.each { |block| block.target = position }
+    @blocks = Block
+      .select { |block| inside?(block.position) }
+      .each { |block| block.target = position }
   end
 
   def outside?(vector, radius = self.radius)
@@ -138,7 +142,7 @@ class Bubble < Chingu::GameObject
   end
 
   def shrink
-    @radius -= SHRINK_RATE / SUBSTEPS
+    @radius -= SHRINK_RATE / SUBSTEPS if radius > DEADLY_R
   end
 
   def grow
