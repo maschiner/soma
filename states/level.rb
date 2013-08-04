@@ -8,9 +8,11 @@ class Level < Chingu::GameState
     render_title
     create_blocks(white: 1, green: 50, red: 50)
 
+    white_block = Block.all.first
+
     self.input = {
       r: -> { current_game_state.setup },
-      mouse_left: -> { Block.all.first.target = mouse_pos },
+      mouse_left: -> { white_block.target = mouse_pos },
       mouse_right: :create_bubble
     }
   end
@@ -47,7 +49,7 @@ class Level < Chingu::GameState
   end
 
   def create_bubble
-    Bubble.create(center: mouse_pos)
+    Bubble.create(position: mouse_pos)
   end
 
   def setup_space

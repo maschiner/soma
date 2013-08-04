@@ -3,6 +3,7 @@ class Block  < Chingu::GameObject
 
   MASS = 10
   MOMENT = 100_000
+  ELASTICITY = 0.5
   ACCELERATION = 3000
 
   Z_INDEX = 10
@@ -63,19 +64,21 @@ class Block  < Chingu::GameObject
   end
 
   def body
-    @body ||= shape.body
+    @body ||= CP::Body.new(MASS, MOMENT)
   end
 
   def shape
-    @shape ||= CP::Shape::Poly.new(
-      physical_body,
+    @shape ||= create_shape
+  end
+
+  def create_shape
+    shape = CP::Shape::Poly.new(
+      body,
       shape_vectors,
       zero_vector
     )
-  end
-
-  def physical_body
-    CP::Body.new(MASS, MOMENT)
+    shape.e = ELASTICITY
+    shape
   end
 
   def shape_vectors
