@@ -6,14 +6,12 @@ class Level < Chingu::GameState
     setup_space
 
     render_title
-    create_blocks(white: 1, green: 50, red: 50)
-
-    white_block = Block.all.first
+    create_blocks(green: 20, red: 20)
 
     self.input = {
-      r: -> { current_game_state.setup },
-      mouse_left: -> { white_block.target = mouse_pos },
-      mouse_right: :create_bubble
+      :r => :restart,
+      :mouse_left => :random_block_target,
+      :mouse_right => :create_bubble
     }
   end
 
@@ -21,12 +19,11 @@ class Level < Chingu::GameState
     super
 
     render_caption
+    Bubble.each(&:run)
 
     SUBSTEPS.times do
 
       Block.each(&:move)
-      Bubble.each(&:run)
-
       $space.step(DT)
     end
   end
@@ -40,7 +37,7 @@ class Level < Chingu::GameState
     options.each do |color, count|
       count.times do
         Block.create(
-          position: center_pos,
+          position: random_pos,
           angle: random_angle,
           color: self.send(color)
         )
@@ -50,6 +47,14 @@ class Level < Chingu::GameState
 
   def create_bubble
     Bubble.create(position: mouse_pos)
+  end
+
+  def random_block_target
+    Block.all.sample.target = mouse_pos
+  end
+
+  def restart
+    current_game_state.setup
   end
 
   def setup_space

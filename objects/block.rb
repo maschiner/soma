@@ -4,11 +4,11 @@ class Block  < Chingu::GameObject
   MASS = 10
   MOMENT = 100_000
   ELASTICITY = 0.5
-  ACCELERATION = 3000
+  ACCELERATION = 1000
 
   Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
-  TARGET_RESET_DISTANCE = 50
+  TARGET_RESET_DISTANCE = 30
 
   attr_accessor :target
   attr_reader :image, :color, :initial_position, :initial_angle
@@ -26,17 +26,6 @@ class Block  < Chingu::GameObject
 
   public
 
-  def draw
-    image.draw_rot(
-      *position,
-      Z_INDEX,
-      angle.radians_to_gosu,
-      *DRAW_SETTINGS,
-      color
-    )
-    debug
-  end
-
   def move
     reset_forces
     move_to_target if target
@@ -49,6 +38,25 @@ class Block  < Chingu::GameObject
     reset_target
 
     spawn
+  end
+
+  def position
+    body.p
+  end
+
+  def draw
+    image.draw_rot(
+      *position,
+      Z_INDEX,
+      angle.radians_to_gosu,
+      *DRAW_SETTINGS,
+      color
+    )
+    debug
+  end
+
+  def reset_velocity
+    body.v = zero_vector
   end
 
   private
@@ -94,10 +102,6 @@ class Block  < Chingu::GameObject
     body.p = vector
   end
 
-  def position
-    body.p
-  end
-
   def angle=(radians)
     body.a = radians
   end
@@ -106,12 +110,16 @@ class Block  < Chingu::GameObject
     body.a
   end
 
+  def lock_to_target
+    turn_to(target)
+    accelerate
+  end
+
   def move_to_target
     if position.near?(target, TARGET_RESET_DISTANCE)
-      reset_target
+      #reset_target
     else
-      turn_to(target)
-      accelerate
+      lock_to_target
     end
   end
 
@@ -137,10 +145,6 @@ class Block  < Chingu::GameObject
 
   def reset_forces
     body.reset_forces
-  end
-
-  def reset_velocity
-    body.v = zero_vector
   end
 
   def reset_rot_velocity
