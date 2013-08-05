@@ -15,6 +15,7 @@ class Level < Chingu::GameState
     }
   end
 
+
   public
 
   def update
@@ -33,6 +34,7 @@ class Level < Chingu::GameState
     Block.each(&:reset)
     Bubble.destroy_all
   end
+
 
   private
 
@@ -63,6 +65,7 @@ class Level < Chingu::GameState
   def setup_space
     $space = CP::Space.new
     $space.damping = DAMPING
+    $space.add_collision_func(:bubble, :block) { false }
   end
 
   def render_title

@@ -23,6 +23,8 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
+    register_to_space
+
     register_blocks
   end
 
@@ -44,11 +46,19 @@ class Bubble < Chingu::GameObject
     remove_blocks
     add_blocks
     packed? ? grow : shrink
+
+    puts shape.bb.inspect
   end
+
 
   private
 
   attr_reader :color, :blocks
+
+  def register_to_space
+    $space.add_body(body)
+    $space.add_shape(shape)
+  end
 
   def register_blocks
     Block.select { |block| block.position.inside?(self) }
@@ -95,6 +105,12 @@ class Bubble < Chingu::GameObject
 
   def body
     @body ||= CP::Body.new(MASS, MOMENT)
+  end
+
+  def shape
+    shape = CP::Shape::Circle.new(body, radius, zero_vector)
+    shape.collision_type = :bubble
+    shape
   end
 
   def position=(vector)

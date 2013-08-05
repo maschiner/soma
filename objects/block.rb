@@ -10,9 +10,6 @@ class Block  < Chingu::GameObject
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
   TARGET_RESET_DISTANCE = 30
 
-  attr_accessor :target
-  attr_reader :image, :color, :initial_position, :initial_angle
-
   def initialize(options={})
     super
     @image = Image["block.png"]
@@ -24,7 +21,11 @@ class Block  < Chingu::GameObject
     spawn
   end
 
+
   public
+
+  attr_accessor :target
+  attr_reader :image
 
   def move
     reset_forces
@@ -59,7 +60,10 @@ class Block  < Chingu::GameObject
     body.v = zero_vector
   end
 
+
   private
+
+  attr_reader :color, :initial_position, :initial_angle
 
   def spawn
     self.position = initial_position
@@ -86,6 +90,7 @@ class Block  < Chingu::GameObject
       zero_vector
     )
     shape.e = ELASTICITY
+    shape.collision_type = :block
     shape
   end
 
