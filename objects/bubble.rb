@@ -14,7 +14,6 @@ class Bubble < Chingu::GameObject
   MASS = 10
   MOMENT = 1
 
-  attr_reader :radius, :color, :blocks
   def initialize(options={})
     super
 
@@ -22,13 +21,19 @@ class Bubble < Chingu::GameObject
     @radius = options[:radius] || BASE_R
     @color = options[:color] || white
 
-    #register_to_space
-    register_blocks
+    @blocks = []
 
-    #puts blocks.inspect
+    register_blocks
   end
 
+
   public
+
+  attr_reader :radius
+
+  def position
+    body.p
+  end
 
   def draw
     draw_circle(*position, radius, color)
@@ -36,55 +41,29 @@ class Bubble < Chingu::GameObject
 
   def run
     destroy if encased? || collapsing?
-    check_blocks
+    remove_blocks
+    add_blocks
     packed? ? grow : shrink
-
-    validate_position
-  end
-
-  protected
-
-  def position
-    body.p
-  end
-
-  def inside?(vector, radius = self.radius)
-    (vector.x - position.x) ** 2 +
-    (vector.y - position.y) ** 2 < radius ** 2
   end
 
   private
 
-  def packed?
-    blocks.any? do |block|
-      outside?(block.position, core_radius) &&
-      inside?(block.position, grow_radius)
-    end
-  end
+  attr_reader :color, :blocks
 
-  def grow_radius
-    radius + GROW_MARGIN
-  end
-
-  def encased?
-    Bubble.all.any? do |bubble|
-      bubble != self &&
-      bubble.inside?(position) &&
-      bubble.radius > radius
-    end
-  end
-
-  def check_blocks
-    remove_blocks
-    add_blocks
+  def register_blocks
+    Block.select { |block| block.position.inside?(self) }
+      .each { |block| add_block(block) }
   end
 
   def add_blocks
     blocks_to_add.each { |block| add_block(block) }
   end
 
-  def remove_blocks
-    @blocks -= blocks_to_remove
+  def blocks_to_add
+    Block.all.select do |block|
+      block.target &&
+      block.target.inside?(self)
+    end - blocks
   end
 
   def add_block(block)
@@ -92,53 +71,46 @@ class Bubble < Chingu::GameObject
     block.target = position
   end
 
-  def blocks_to_add
-    Block.all.select do |block|
-      block.target &&
-      inside?(block.target) &&
-      block.target != position
-    end
+  def remove_blocks
+    @blocks -= blocks_to_remove
   end
 
   def blocks_to_remove
-    blocks.select { |block| outside?(block.target) }
+    blocks.select { |block| block.target.outside?(self) }
   end
 
-  def core_radius
-    radius - SHRINK_MARGIN
+  def packed?
+    blocks.any? do |block|
+      block.position.outside?(self, core_radius) &&
+      block.position.inside?(self, grow_radius)
+    end
   end
 
-  def register_blocks
-    @blocks = Block
-      .select { |block| inside?(block.position) }
-      .each { |block| block.target = position }
+  def encased?
+    Bubble.all.any? do |bubble|
+      bubble.position.inside?(self) &&
+      bubble.radius > radius
+    end
   end
 
-  def outside?(vector, radius = self.radius)
-    !inside?(vector, radius)
-  end
-
-  def validate_position
-    position.x %= RES_X
-    position.y %= RES_Y
+  def body
+    @body ||= CP::Body.new(MASS, MOMENT)
   end
 
   def position=(vector)
     body.p = vector
   end
 
-  def register_to_space
-    $space.add_body(body)
-    $space.add_shape(shape)
+  def collapsing?
+    blocks.empty? && radius < DEADLY_R
   end
 
-  def body
-    @body ||= CP::Body.new(MASS, MOMENT)
-
+  def core_radius
+    radius - SHRINK_MARGIN
   end
 
-  def shape
-    CP::Shape::Circle.new(body, radius, zero_vector)
+  def grow_radius
+    radius + GROW_MARGIN
   end
 
   def shrink
@@ -147,10 +119,6 @@ class Bubble < Chingu::GameObject
 
   def grow
     @radius += GROW_RATE / SUBSTEPS
-  end
-
-  def collapsing?
-    radius < DEADLY_R && blocks.empty?
   end
 
 end

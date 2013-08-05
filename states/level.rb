@@ -9,11 +9,13 @@ class Level < Chingu::GameState
     create_blocks(green: 50, red: 50)
 
     self.input = {
-      :r => :restart,
-      :mouse_left => :random_block_target,
-      :mouse_right => :create_bubble
+      :mouse_left  => :random_block_target,
+      :mouse_right => :create_bubble,
+      :r           => :restart
     }
   end
+
+  public
 
   def update
     super
@@ -22,7 +24,6 @@ class Level < Chingu::GameState
     Bubble.each(&:run)
 
     SUBSTEPS.times do
-
       Block.each(&:move)
       $space.step(DT)
     end
@@ -32,6 +33,8 @@ class Level < Chingu::GameState
     Block.each(&:reset)
     Bubble.destroy_all
   end
+
+  private
 
   def create_blocks(options={})
     options.each do |color, count|
