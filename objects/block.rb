@@ -4,7 +4,7 @@ class Block  < Chingu::GameObject
   MASS = 10
   MOMENT = 1000
   ELASTICITY = 0.5
-  ACCELERATION = 1000
+  ACCELERATION = 100
 
   Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]

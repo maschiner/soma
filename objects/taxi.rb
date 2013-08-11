@@ -2,7 +2,7 @@ class Taxi < Chingu::GameObject
   include Chingu::Helpers::GFX
   include Helpers
 
-  CLOCK = 10
+  CLOCK = 5
 
   def initialize(options = {})
     super
@@ -16,6 +16,8 @@ class Taxi < Chingu::GameObject
 
 
   public
+
+  attr_accessor :source_bubble, :target_bubble
 
   def draw
     begin
@@ -39,7 +41,7 @@ class Taxi < Chingu::GameObject
 
   private
 
-  attr_accessor :source_bubble, :target_bubble, :block, :vacant
+  attr_accessor :block, :vacant
 
   def dispatch
     @block ||= source_bubble.deliver_block(target_position)

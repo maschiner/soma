@@ -3,12 +3,12 @@ class Bubble < Chingu::GameObject
   include Helpers
 
   BASE_R = 200
-  DEADLY_R = 20
+  DEADLY_R = 40
 
   SHRINK_RATE = 3.0
   SHRINK_MARGIN = 50
 
-  GROW_RATE = 2.0
+  GROW_RATE = 1.0
   GROW_MARGIN = 50
 
   MASS = 10
@@ -42,14 +42,29 @@ class Bubble < Chingu::GameObject
   end
 
   def run
-    destroy if encased?# || collapsing?
+    kill if encased? || collapsing?
     remove_blocks
     add_blocks
     packed? ? grow : shrink
   end
 
+  def kill
+    destroy_taxis
+    destroy
+  end
+
+  def destroy_taxis
+    Taxi
+    .all
+    .select { |t| t.source_bubble == self }
+    .each(&:destroy)
+  end
+
   def deliver_block(taxi_target)
-    block = blocks.first
+    block = blocks
+    .select { |b| b.position.inside?(self) }
+    .sort_by { |b| b.position.dist(taxi_target) }
+    .first
     #puts block.inspect if block
     #block.target = taxi_target if block
   end
@@ -122,7 +137,11 @@ class Bubble < Chingu::GameObject
   end
 
   def collapsing?
-    blocks.empty? && radius < DEADLY_R
+    blocks.empty? && !target_bubble? && radius < DEADLY_R
+  end
+
+  def target_bubble?
+    Taxi.all.any? { |t| t.target_bubble == self }
   end
 
   def core_radius

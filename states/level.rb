@@ -6,7 +6,7 @@ class Level < Chingu::GameState
     setup_space
 
     render_title
-    create_blocks(green: 50, red: 50)
+    create_blocks(green: 3, red: 3)
 
     self.input = {
       :space  => :random_block_target,
@@ -52,16 +52,27 @@ class Level < Chingu::GameState
 
       if last_bubble
         puts 'bubble last'
-        Taxi.create(
-          source_bubble: last_bubble,
-          target_bubble: bubble_now
-        )
+        if inverse_taxi
+          inverse_taxi.destroy
+        else
+          Taxi.create(
+            source_bubble: last_bubble,
+            target_bubble: bubble_now
+          )
+        end
         @last_bubble = nil
       else
         @last_bubble = bubble_now
       end
 
     end
+  end
+
+  def inverse_taxi
+    Taxi.all.select do |t|
+      t.source_bubble == bubble_now &&
+      t.target_bubble == last_bubble
+    end.first
   end
 
   def bubble_now
@@ -76,7 +87,7 @@ class Level < Chingu::GameState
     options.each do |color, count|
       count.times do
         Block.create(
-          position: random_pos,
+          position: center_pos,
           angle: random_angle,
           color: self.send(color)
         )

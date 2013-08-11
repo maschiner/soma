@@ -8,7 +8,7 @@ module Settings
   DT = 1 / 60.0
 
   DEBUG = {
-    target_line: true
+    target_line: false
   }
 
   def needs_cursor?
