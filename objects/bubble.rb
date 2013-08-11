@@ -42,10 +42,16 @@ class Bubble < Chingu::GameObject
   end
 
   def run
-    destroy if encased? || collapsing?
+    destroy if encased?# || collapsing?
     remove_blocks
     add_blocks
     packed? ? grow : shrink
+  end
+
+  def deliver_block(taxi_target)
+    block = blocks.first
+    #puts block.inspect if block
+    #block.target = taxi_target if block
   end
 
 

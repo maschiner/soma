@@ -9,9 +9,11 @@ class Level < Chingu::GameState
     create_blocks(green: 50, red: 50)
 
     self.input = {
-      :mouse_left  => :random_block_target,
+      :space  => :random_block_target,
+      :mouse_left => :mouse_left,
       :mouse_right => :create_bubble,
-      :r           => :restart
+      :r           => :restart,
+      :t           => :create_taxi
     }
   end
 
@@ -23,20 +25,52 @@ class Level < Chingu::GameState
 
     render_caption
     Bubble.each(&:run)
+    Taxi.each(&:run)
 
     SUBSTEPS.times do
       Block.each(&:move)
       $space.step(DT)
     end
+
+    #puts Taxi.all
   end
 
   def setup
     Block.each(&:reset)
     Bubble.destroy_all
+    Taxi.destroy_all
   end
 
 
   private
+
+  attr_accessor :last_bubble
+
+  def mouse_left
+    if bubble_now
+      puts 'bubble now'
+
+      if last_bubble
+        puts 'bubble last'
+        Taxi.create(
+          source_bubble: last_bubble,
+          target_bubble: bubble_now
+        )
+        @last_bubble = nil
+      else
+        @last_bubble = bubble_now
+      end
+
+    end
+  end
+
+  def bubble_now
+    bubble_find(mouse_pos)
+  end
+
+  def bubble_find(vector)
+    Bubble.all.select { |bubble| mouse_pos.inside?(bubble) }.first
+  end
 
   def create_blocks(options={})
     options.each do |color, count|
@@ -52,6 +86,23 @@ class Level < Chingu::GameState
 
   def create_bubble
     Bubble.create(position: mouse_pos)
+  end
+
+  def create_taxi
+    if Bubble.all.count >= 2
+
+      bub1 = random_bubble
+      bub2 = (Bubble.all - [bub1]).sample
+
+      Taxi.create(
+        source_bubble: bub1,
+        target_bubble: bub2
+      )
+    end
+  end
+
+  def random_bubble
+    Bubble.all.sample
   end
 
   def random_block_target
