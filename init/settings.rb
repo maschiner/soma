@@ -3,7 +3,7 @@ module Settings
   RES_Y = 1050
   FULLSCREEN = false
 
-  DAMPING = 0.99
+  DAMPING = 0.8
   SUBSTEPS = 6
   DT = 1 / 60.0
 

@@ -2,6 +2,8 @@ module Helpers
   include Settings
   include Colors
 
+  private
+
   def mouse_pos
     CP::Vec2.new($window.mouse_x, $window.mouse_y)
   end

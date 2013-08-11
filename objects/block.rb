@@ -2,15 +2,13 @@ class Block  < Chingu::GameObject
   include Helpers
 
   MASS = 10
-  MOMENT = 100_000
-  ACCELERATION = 3000
+  MOMENT = 1000
+  ELASTICITY = 0.5
+  ACCELERATION = 1000
 
   Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
-  TARGET_RESET_DISTANCE = 50
-
-  attr_accessor :target
-  attr_reader :image, :color, :initial_position, :initial_angle
+  TARGET_RESET_DISTANCE = 30
 
   def initialize(options={})
     super
@@ -19,23 +17,15 @@ class Block  < Chingu::GameObject
     @initial_position = options[:position]
     @initial_angle    = options[:angle]
 
-    register_to(options[:space])
-
+    register_to_space
     spawn
   end
 
+
   public
 
-  def draw
-    image.draw_rot(
-      *position,
-      Z_INDEX,
-      angle.radians_to_gosu,
-      *DRAW_SETTINGS,
-      color
-    )
-    debug
-  end
+  attr_accessor :target
+  attr_reader :image
 
   def move
     reset_forces
@@ -51,32 +41,57 @@ class Block  < Chingu::GameObject
     spawn
   end
 
+  def position
+    body.p
+  end
+
+  def draw
+    image.draw_rot(
+      *position,
+      Z_INDEX,
+      angle.radians_to_gosu,
+      *DRAW_SETTINGS,
+      color
+    )
+    debug
+  end
+
+  def reset_velocity
+    body.v = zero_vector
+  end
+
+
   private
+
+  attr_reader :color, :initial_position, :initial_angle
 
   def spawn
     self.position = initial_position
     self.angle = initial_angle
   end
 
-  def register_to(space)
-    space.add_body(body)
-    space.add_shape(shape)
+  def register_to_space
+    $space.add_body(body)
+    $space.add_shape(shape)
   end
 
   def body
-    @body ||= shape.body
+    @body ||= CP::Body.new(MASS, MOMENT)
   end
 
   def shape
-    @shape ||= CP::Shape::Poly.new(
-      physical_body,
+    @shape ||= create_shape
+  end
+
+  def create_shape
+    shape = CP::Shape::Poly.new(
+      body,
       shape_vectors,
       zero_vector
     )
-  end
-
-  def physical_body
-    CP::Body.new(MASS, MOMENT)
+    shape.e = ELASTICITY
+    shape.collision_type = :block
+    shape
   end
 
   def shape_vectors
@@ -92,10 +107,6 @@ class Block  < Chingu::GameObject
     body.p = vector
   end
 
-  def position
-    body.p
-  end
-
   def angle=(radians)
     body.a = radians
   end
@@ -104,12 +115,16 @@ class Block  < Chingu::GameObject
     body.a
   end
 
+  def lock_to_target
+    turn_to(target)
+    accelerate
+  end
+
   def move_to_target
     if position.near?(target, TARGET_RESET_DISTANCE)
-      reset_target
+      #reset_target
     else
-      turn_to(target)
-      accelerate
+      lock_to_target
     end
   end
 
@@ -135,10 +150,6 @@ class Block  < Chingu::GameObject
 
   def reset_forces
     body.reset_forces
-  end
-
-  def reset_velocity
-    body.v = zero_vector
   end
 
   def reset_rot_velocity
