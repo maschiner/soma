@@ -23,7 +23,7 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
-    register_to_space
+    #register_to_space
 
     register_blocks
   end
@@ -46,8 +46,6 @@ class Bubble < Chingu::GameObject
     remove_blocks
     add_blocks
     packed? ? grow : shrink
-
-    puts shape.bb.inspect
   end
 
 
