@@ -48,13 +48,15 @@ class Level < Chingu::GameState
 
   def mouse_left
     if bubble_now
-      puts 'bubble now'
-
       if last_bubble
-        puts 'bubble last'
         if inverse_taxi
+          puts 'inverse'
           inverse_taxi.destroy
+        elsif existing_taxi
+          puts 'existing'
+          existing_taxi.change_mode
         else
+          puts 'new'
           Taxi.create(
             source_bubble: last_bubble,
             target_bubble: bubble_now
@@ -66,6 +68,13 @@ class Level < Chingu::GameState
       end
 
     end
+  end
+
+  def existing_taxi
+    Taxi.all.select do |t|
+      t.source_bubble == last_bubble &&
+      t.target_bubble == bubble_now
+    end.first
   end
 
   def inverse_taxi

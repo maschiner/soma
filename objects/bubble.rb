@@ -60,8 +60,19 @@ class Bubble < Chingu::GameObject
     .each(&:destroy)
   end
 
-  def deliver_block(taxi_target)
-    block = blocks
+  def deliver_block(taxi_target, options = {})
+    puts options.inspect
+    if options[:color]
+    filtered_blocks =
+      blocks.select do |b|
+        puts [b.color, self.send(options[:color])].inspect
+        b.color == self.send(options[:color])
+      end
+    else
+     filtered_blocks = blocks
+    end
+
+    block = filtered_blocks
     .select { |b| b.position.inside?(self) }
     .sort_by { |b| b.position.dist(taxi_target) }
     .first

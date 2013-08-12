@@ -2,6 +2,7 @@ require 'rubygems'
 require 'gosu'
 require 'chingu'
 require 'chipmunk'
+require 'state_machine'
 
 require_relative "init/settings.rb"
 

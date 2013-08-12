@@ -25,7 +25,7 @@ class Block  < Chingu::GameObject
   public
 
   attr_accessor :target
-  attr_reader :image
+  attr_reader :image, :color
 
   def move
     reset_forces
@@ -63,7 +63,7 @@ class Block  < Chingu::GameObject
 
   private
 
-  attr_reader :color, :initial_position, :initial_angle
+  attr_reader :initial_position, :initial_angle
 
   def spawn
     self.position = initial_position
