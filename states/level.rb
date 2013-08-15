@@ -1,12 +1,14 @@
 class Level < Chingu::GameState
   include Helpers
 
+  CLOCK_BASE = 3600
+
   def initialize(options={})
     super
     setup_space
 
     render_title
-    create_blocks(green: 3, red: 3)
+    create_blocks(green: 12, red: 12)
 
     self.input = {
       :space  => :random_block_target,
@@ -15,6 +17,8 @@ class Level < Chingu::GameState
       :r           => :restart,
       :t           => :create_taxi
     }
+
+    @counter = 0
   end
 
 
@@ -23,16 +27,23 @@ class Level < Chingu::GameState
   def update
     super
 
+    increment_counter
+
+    clock(3) do
+      Taxi.each(&:run)
+    end
+
     render_caption
-    Bubble.each(&:run)
-    Taxi.each(&:run)
+
+    clock(1/15.0) do
+      Bubble.each(&:run)
+    end
+
 
     SUBSTEPS.times do
       Block.each(&:move)
       $space.step(DT)
     end
-
-    #puts Taxi.all
   end
 
   def setup
@@ -44,30 +55,44 @@ class Level < Chingu::GameState
 
   private
 
-  attr_accessor :last_bubble
+  attr_accessor :last_bubble, :counter
+
+  def increment_counter
+    @counter = (counter + 1) % CLOCK_BASE
+  end
+
+  def clock(seconds = 1, &blk)
+    yield if counter % (seconds * 60).to_i == 0
+  end
+
+
 
   def mouse_left
     if bubble_now
       if last_bubble
+
         if inverse_taxi
-          puts 'inverse'
-          inverse_taxi.destroy
+          inverse_taxi.kill
+
         elsif existing_taxi
-          puts 'existing'
           existing_taxi.change_mode
+
         else
-          puts 'new'
-          Taxi.create(
-            source_bubble: last_bubble,
-            target_bubble: bubble_now
-          )
+          create_taxi(last_bubble, bubble_now)
         end
+
         @last_bubble = nil
       else
         @last_bubble = bubble_now
       end
-
     end
+  end
+
+  def create_taxi(source_bubble, target_bubble)
+    Taxi.create(
+      source_bubble: source_bubble,
+      target_bubble: target_bubble
+    )
   end
 
   def existing_taxi
@@ -106,19 +131,6 @@ class Level < Chingu::GameState
 
   def create_bubble
     Bubble.create(position: mouse_pos)
-  end
-
-  def create_taxi
-    if Bubble.all.count >= 2
-
-      bub1 = random_bubble
-      bub2 = (Bubble.all - [bub1]).sample
-
-      Taxi.create(
-        source_bubble: bub1,
-        target_bubble: bub2
-      )
-    end
   end
 
   def random_bubble

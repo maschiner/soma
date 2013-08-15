@@ -23,9 +23,9 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
-    #register_to_space
-
     register_blocks
+
+    puts "#{time_now} bubl #{self.object_id} new" if log_bubble?
   end
 
 
@@ -50,6 +50,7 @@ class Bubble < Chingu::GameObject
 
   def kill
     destroy_taxis
+    puts "#{time_now} bubl #{self.object_id} destroy" if log_bubble?
     destroy
   end
 
@@ -57,27 +58,24 @@ class Bubble < Chingu::GameObject
     Taxi
     .all
     .select { |t| t.source_bubble == self }
-    .each(&:destroy)
+    .each(&:kill)
   end
 
-  def deliver_block(taxi_target, options = {})
-    puts options.inspect
-    if options[:color]
-    filtered_blocks =
-      blocks.select do |b|
-        puts [b.color, self.send(options[:color])].inspect
-        b.color == self.send(options[:color])
-      end
+  def find_block(options = {})
+    filtered_blocks = if options[:color]
+      blocks.select { |b| b.color == self.send(options[:color]) }
     else
-     filtered_blocks = blocks
+     blocks
     end
 
-    block = filtered_blocks
-    .select { |b| b.position.inside?(self) }
-    .sort_by { |b| b.position.dist(taxi_target) }
-    .first
-    #puts block.inspect if block
-    #block.target = taxi_target if block
+    if options[:near]
+      filtered_blocks
+        .select { |b| b.position.inside?(self) }
+        .sort_by { |b| b.position.dist(options[:near]) }
+        .first
+    else
+      filtered_blocks.first
+    end
   end
 
 
@@ -148,10 +146,10 @@ class Bubble < Chingu::GameObject
   end
 
   def collapsing?
-    blocks.empty? && !target_bubble? && radius < DEADLY_R
+    blocks.empty? && !is_target_bubble? && radius < DEADLY_R
   end
 
-  def target_bubble?
+  def is_target_bubble?
     Taxi.all.any? { |t| t.target_bubble == self }
   end
 

@@ -3,23 +3,9 @@ class Taxi < Chingu::GameObject
   include Helpers
 
   CLOCK = 5
+  MODE_PAUSE = 2
 
-  # mode = Statemachine.build do
-  #   trans :default, :toggle, :stop
-  #   trans :stop, :toggle, :any
-  #   trans :any, :toggle, :green
-  #   trans :green, :toggle, :red
-  #   trans :red, :toggle, :stop
-  # end
- state_machine :transport_mode, :initial => :stop do
-    # before_transition :parked => any - :parked, :do => :put_on_seatbelt
-
-    # after_transition :on => :crash, :do => :tow
-    # after_transition :on => :repair, :do => :fix
-    # after_transition any => :parked do |vehicle, transition|
-    #   vehicle.seatbelt_on = false
-    # end
-
+  state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
 
     event :toggle do
@@ -28,9 +14,7 @@ class Taxi < Chingu::GameObject
       transition :green => :red
       transition :red => :stop
     end
-
   end
-
 
   def initialize(options = {})
     super
@@ -38,32 +22,27 @@ class Taxi < Chingu::GameObject
     @source_bubble = options[:source_bubble]
     @target_bubble =  options[:target_bubble]
     @vacant = true
-    #@mode = :stop
+    @pause = 0
 
-    puts transport_mode.inspect
-
-
+    puts "#{time_now} taxi #{self.object_id} new"
   end
 
 
   public
 
-  attr_accessor :source_bubble, :target_bubble#, :mode
-
-  # def toggle
-  #   puts transport_mode
-  # end
+  attr_accessor :source_bubble, :target_bubble
 
   def change_mode
     toggle
-    puts transport_mode
+    @pause = MODE_PAUSE
+    puts "#{time_now} taxi #{self.object_id} change_mode #{self.transport_mode}"
   end
 
   def draw
     begin
       $window.draw_line(
-        *source_position, white,
-        *target_position, white
+        *source_position, mode_to_color,
+        *target_position, mode_to_color
       )
       draw_circle(*source_position, 20, mode_to_color)
       draw_circle(*target_position, 5, mode_to_color)
@@ -71,23 +50,34 @@ class Taxi < Chingu::GameObject
     rescue
     end
 
-    # Chingu::Text.create(
-    #   x: source_position.x, y: source_position.y, size: 30,
-    #   text: "#{transport_mode}"
-    # )
   end
 
   def run
-    if mode != :stop
-      dispatch if ready?
-      check_vacancy
+    if ready?
+      if paused?
+        puts "#{time_now} taxi #{self.object_id} paused" if log_taxi?
+        decrement_pause
+      else
+        dispatch
+      end
     end
+
+    check_vacancy
+  end
+
+  def kill
+    puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
+    self.destroy
   end
 
 
   private
 
-  attr_accessor :block, :vacant
+  attr_accessor :block, :vacant, :pause
+
+  def decrement_pause
+    @pause -= 1
+  end
 
   def mode_to_color
     {
@@ -99,36 +89,52 @@ class Taxi < Chingu::GameObject
   end
 
   def dispatch
-    @block ||= if transport_mode == "green" || transport_mode == "red"
-      source_bubble.deliver_block(target_position, color: transport_mode.to_sym)
-    else
-      source_bubble.deliver_block(target_position)
-    end
+    @block ||= select_block
 
     if block
-      vacant = false
+      puts "#{time_now} taxi #{self.object_id} dispatch block #{block.object_id}" if log_taxi?
+
       block.target = target_position
     end
   end
 
+  def select_block
+   if transport_mode == "green" || transport_mode == "red"
+      source_bubble.find_block(near: target_position, color: transport_mode.to_sym)
+    else
+      source_bubble.find_block(near: target_position)
+    end
+  end
+
   def ready?
-    running? &&
-    vacant? &&
-    Time.now.to_i % CLOCK == 0
+    running? && vacant?
+  end
+
+  def clock?
+    Time.now.to_i % CLOCK * 3600 == 0
   end
 
   def running?
     transport_mode != "stop"
   end
 
+  def paused?
+    !unpaused?
+  end
+
+  def unpaused?
+    pause.zero?
+  end
+
   def vacant?
-    vacant
+    block.nil?
   end
 
   def check_vacancy
     if block && block.position.inside?(target_bubble)
       vacant = true
       @block = nil
+      puts "#{time_now} taxi #{self.object_id} ready" if log_taxi?
     end
   end
 

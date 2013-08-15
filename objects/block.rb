@@ -161,7 +161,7 @@ class Block  < Chingu::GameObject
   end
 
   def debug
-    if DEBUG[:target_line]
+    if debug_block_target_line?
       if target && !body.p.near?(target, TARGET_RESET_DISTANCE)
         begin
           $window.draw_line(*position, white, *target, white)
