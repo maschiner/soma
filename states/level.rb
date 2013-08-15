@@ -11,9 +11,9 @@ class Level < Chingu::GameState
     create_blocks(green: 12, red: 12)
 
     self.input = {
-      :space  => :random_block_target,
-      :mouse_left => :mouse_left,
+      :mouse_left  => :taxi_input,
       :mouse_right => :create_bubble,
+      :space       => :random_block_target,
       :r           => :restart,
       :t           => :create_taxi
     }
@@ -57,17 +57,10 @@ class Level < Chingu::GameState
 
   attr_accessor :last_bubble, :counter
 
-  def increment_counter
-    @counter = (counter + 1) % CLOCK_BASE
-  end
 
-  def clock(seconds = 1, &blk)
-    yield if counter % (seconds * 60).to_i == 0
-  end
+  # input
 
-
-
-  def mouse_left
+  def taxi_input
     if bubble_now
       if last_bubble
 
@@ -88,11 +81,23 @@ class Level < Chingu::GameState
     end
   end
 
-  def create_taxi(source_bubble, target_bubble)
-    Taxi.create(
-      source_bubble: source_bubble,
-      target_bubble: target_bubble
-    )
+  def random_block_target
+    Block.all.sample.target = mouse_pos
+  end
+
+  def restart
+    current_game_state.setup
+  end
+
+
+  # taxi input
+
+  def bubble_now
+    bubble_find(mouse_pos)
+  end
+
+  def bubble_find(vector)
+    Bubble.all.select { |bubble| mouse_pos.inside?(bubble) }.first
   end
 
   def existing_taxi
@@ -109,13 +114,19 @@ class Level < Chingu::GameState
     end.first
   end
 
-  def bubble_now
-    bubble_find(mouse_pos)
+
+  # clock
+
+  def increment_counter
+    @counter = (counter + 1) % CLOCK_BASE
   end
 
-  def bubble_find(vector)
-    Bubble.all.select { |bubble| mouse_pos.inside?(bubble) }.first
+  def clock(seconds = 1, &blk)
+    yield if counter % (seconds * 60).to_i == 0
   end
+
+
+  # builders
 
   def create_blocks(options={})
     options.each do |color, count|
@@ -133,17 +144,15 @@ class Level < Chingu::GameState
     Bubble.create(position: mouse_pos)
   end
 
-  def random_bubble
-    Bubble.all.sample
+  def create_taxi(source_bubble, target_bubble)
+    Taxi.create(
+      source_bubble: source_bubble,
+      target_bubble: target_bubble
+    )
   end
 
-  def random_block_target
-    Block.all.sample.target = mouse_pos
-  end
 
-  def restart
-    current_game_state.setup
-  end
+  # setup
 
   def setup_space
     $space = CP::Space.new

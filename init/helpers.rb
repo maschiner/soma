@@ -2,6 +2,7 @@ module Helpers
   include Settings
   include Colors
 
+
   private
 
   def mouse_pos

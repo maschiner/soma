@@ -3,7 +3,7 @@ class Taxi < Chingu::GameObject
   include Helpers
 
   CLOCK = 5
-  MODE_PAUSE = 2
+  MODE_PAUSE = 1
 
   state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
@@ -46,10 +46,8 @@ class Taxi < Chingu::GameObject
       )
       draw_circle(*source_position, 20, mode_to_color)
       draw_circle(*target_position, 5, mode_to_color)
-
     rescue
     end
-
   end
 
   def run
@@ -75,55 +73,30 @@ class Taxi < Chingu::GameObject
 
   attr_accessor :block, :vacant, :pause
 
-  def decrement_pause
-    @pause -= 1
-  end
 
-  def mode_to_color
-    {
-      "stop" => blue,
-      "both" => yellow,
-      "green" => green,
-      "red" => red
-    }[transport_mode]
-  end
+  # dispatch
 
   def dispatch
     @block ||= select_block
 
     if block
-      puts "#{time_now} taxi #{self.object_id} dispatch block #{block.object_id}" if log_taxi?
-
       block.target = target_position
+
+      puts "#{time_now} taxi #{self.object_id} dispatch block #{block.object_id}" if log_taxi?
     end
   end
 
   def select_block
-   if transport_mode == "green" || transport_mode == "red"
-      source_bubble.find_block(near: target_position, color: transport_mode.to_sym)
-    else
-      source_bubble.find_block(near: target_position)
-    end
+    criteria = { near: target_position }
+    criteria.merge!(color: transport_mode.to_sym) if color_filter?
+    source_bubble.find_block(criteria)
   end
+
+
+  # handle vacancy
 
   def ready?
     running? && vacant?
-  end
-
-  def clock?
-    Time.now.to_i % CLOCK * 3600 == 0
-  end
-
-  def running?
-    transport_mode != "stop"
-  end
-
-  def paused?
-    !unpaused?
-  end
-
-  def unpaused?
-    pause.zero?
   end
 
   def vacant?
@@ -138,6 +111,24 @@ class Taxi < Chingu::GameObject
     end
   end
 
+
+  # pause
+
+  def decrement_pause
+    @pause -= 1
+  end
+
+  def paused?
+    !unpaused?
+  end
+
+  def unpaused?
+    pause.zero?
+  end
+
+
+  # positions
+
   def source_position
     source_bubble.position
   end
@@ -146,5 +137,25 @@ class Taxi < Chingu::GameObject
     target_bubble.position
   end
 
+
+  # state machine
+
+  def running?
+    transport_mode != "stop"
+  end
+
+  def color_filter?
+    transport_mode == "green" ||
+    transport_mode == "red"
+  end
+
+  def mode_to_color
+    {
+      "stop" => blue,
+      "both" => yellow,
+      "green" => green,
+      "red" => red
+    }[transport_mode]
+  end
 
 end

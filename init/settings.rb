@@ -7,12 +7,15 @@ module Settings
   SUBSTEPS = 6
   DT = 1 / 60.0
 
-  def debug_block_target_line?
-    false
-  end
+
+  private
 
   def needs_cursor?
     true
+  end
+
+  def debug_block_target_line?
+    false
   end
 
   def log_taxi?

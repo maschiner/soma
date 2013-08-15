@@ -121,9 +121,7 @@ class Block  < Chingu::GameObject
   end
 
   def move_to_target
-    if position.near?(target, TARGET_RESET_DISTANCE)
-      #reset_target
-    else
+    unless position.near?(target, TARGET_RESET_DISTANCE)
       lock_to_target
     end
   end
