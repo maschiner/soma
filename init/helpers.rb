@@ -2,6 +2,7 @@ module Helpers
   include Settings
   include Colors
 
+
   private
 
   def mouse_pos
@@ -22,6 +23,10 @@ module Helpers
 
   def zero_vector
     CP::Vec2.new(0, 0)
+  end
+
+  def time_now
+    Time.now.strftime('%S')
   end
 
 end

@@ -3,12 +3,12 @@ class Bubble < Chingu::GameObject
   include Helpers
 
   BASE_R = 200
-  DEADLY_R = 20
+  DEADLY_R = 40
 
   SHRINK_RATE = 3.0
   SHRINK_MARGIN = 50
 
-  GROW_RATE = 2.0
+  GROW_RATE = 1.0
   GROW_MARGIN = 50
 
   MASS = 10
@@ -23,9 +23,9 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
-    #register_to_space
-
     register_blocks
+
+    puts "#{time_now} bubl #{self.object_id} new" if log_bubble?
   end
 
 
@@ -42,10 +42,33 @@ class Bubble < Chingu::GameObject
   end
 
   def run
-    destroy if encased? || collapsing?
+    kill if encased? || collapsing?
     remove_blocks
     add_blocks
     packed? ? grow : shrink
+  end
+
+  def kill
+    destroy_taxis
+    puts "#{time_now} bubl #{self.object_id} destroy" if log_bubble?
+    destroy
+  end
+
+  def find_block(options = {})
+    filtered_blocks = if options[:color]
+      blocks.select { |b| b.color == self.send(options[:color]) }
+    else
+     blocks
+    end
+
+    if options[:near]
+      filtered_blocks
+        .select { |b| b.position.inside?(self) }
+        .sort_by { |b| b.position.dist(options[:near]) }
+        .first
+    else
+      filtered_blocks.first
+    end
   end
 
 
@@ -53,10 +76,8 @@ class Bubble < Chingu::GameObject
 
   attr_reader :color, :blocks
 
-  def register_to_space
-    $space.add_body(body)
-    $space.add_shape(shape)
-  end
+
+  # handle blocks
 
   def register_blocks
     Block.select { |block| block.position.inside?(self) }
@@ -87,12 +108,8 @@ class Bubble < Chingu::GameObject
     blocks.select { |block| block.target.outside?(self) }
   end
 
-  def packed?
-    blocks.any? do |block|
-      block.position.outside?(self, core_radius) &&
-      block.position.inside?(self, grow_radius)
-    end
-  end
+
+  # killing
 
   def encased?
     Bubble.all.any? do |bubble|
@@ -101,22 +118,28 @@ class Bubble < Chingu::GameObject
     end
   end
 
-  def body
-    @body ||= CP::Body.new(MASS, MOMENT)
-  end
-
-  def shape
-    shape = CP::Shape::Circle.new(body, radius, zero_vector)
-    shape.collision_type = :bubble
-    shape
-  end
-
-  def position=(vector)
-    body.p = vector
-  end
-
   def collapsing?
-    blocks.empty? && radius < DEADLY_R
+    blocks.empty? && !is_target_bubble? && radius < DEADLY_R
+  end
+
+  def is_target_bubble?
+    Taxi.all.any? { |t| t.target_bubble == self }
+  end
+
+  def destroy_taxis
+    Taxi.all
+      .select { |t| t.source_bubble == self }
+      .each(&:kill)
+  end
+
+
+  # shrink/grow
+
+  def packed?
+    blocks.any? do |block|
+      block.position.outside?(self, core_radius) &&
+      block.position.inside?(self, grow_radius)
+    end
   end
 
   def core_radius
@@ -133,6 +156,17 @@ class Bubble < Chingu::GameObject
 
   def grow
     @radius += GROW_RATE / SUBSTEPS
+  end
+
+
+  # physics
+
+  def position=(vector)
+    body.p = vector
+  end
+
+  def body
+    @body ||= CP::Body.new(MASS, MOMENT)
   end
 
 end

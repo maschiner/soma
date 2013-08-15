@@ -4,7 +4,7 @@ class Block  < Chingu::GameObject
   MASS = 10
   MOMENT = 1000
   ELASTICITY = 0.5
-  ACCELERATION = 1000
+  ACCELERATION = 100
 
   Z_INDEX = 10
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
@@ -25,7 +25,7 @@ class Block  < Chingu::GameObject
   public
 
   attr_accessor :target
-  attr_reader :image
+  attr_reader :image, :color
 
   def move
     reset_forces
@@ -63,7 +63,7 @@ class Block  < Chingu::GameObject
 
   private
 
-  attr_reader :color, :initial_position, :initial_angle
+  attr_reader :initial_position, :initial_angle
 
   def spawn
     self.position = initial_position
@@ -121,9 +121,7 @@ class Block  < Chingu::GameObject
   end
 
   def move_to_target
-    if position.near?(target, TARGET_RESET_DISTANCE)
-      #reset_target
-    else
+    unless position.near?(target, TARGET_RESET_DISTANCE)
       lock_to_target
     end
   end
@@ -161,7 +159,7 @@ class Block  < Chingu::GameObject
   end
 
   def debug
-    if DEBUG[:target_line]
+    if debug_block_target_line?
       if target && !body.p.near?(target, TARGET_RESET_DISTANCE)
         begin
           $window.draw_line(*position, white, *target, white)
