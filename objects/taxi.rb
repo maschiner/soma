@@ -1,9 +1,9 @@
 class Taxi < Chingu::GameObject
   include Chingu::Helpers::GFX
   include Helpers
+  include Clocking
 
-  CLOCK = 5
-  MODE_PAUSE = 1
+  MODE_PAUSE = 3
 
   state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
@@ -50,17 +50,20 @@ class Taxi < Chingu::GameObject
     end
   end
 
-  def run
-    if ready?
-      if paused?
-        puts "#{time_now} taxi #{self.object_id} paused" if log_taxi?
-        decrement_pause
-      else
-        dispatch
-      end
-    end
+  def step
+    if running?
 
-    check_vacancy
+      clock(1_000) do
+        decrement_pause if paused?
+        check_vacancy
+      end
+
+      clock(10_000) do
+        dispatch if ready?
+      end
+
+      increment_counter
+    end
   end
 
   def kill
@@ -96,7 +99,7 @@ class Taxi < Chingu::GameObject
   # handle vacancy
 
   def ready?
-    running? && vacant?
+    vacant? && unpaused?
   end
 
   def vacant?
@@ -115,6 +118,7 @@ class Taxi < Chingu::GameObject
   # pause
 
   def decrement_pause
+    puts "#{time_now} taxi #{self.object_id} paused" if log_taxi?
     @pause -= 1
   end
 

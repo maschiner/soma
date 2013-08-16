@@ -1,8 +1,6 @@
 class Level < Chingu::GameState
   include Helpers
 
-  CLOCK_BASE = 3600
-
   def initialize(options={})
     super
     setup_space
@@ -17,8 +15,6 @@ class Level < Chingu::GameState
       :r           => :restart,
       :t           => :create_taxi
     }
-
-    @counter = 0
   end
 
 
@@ -27,18 +23,10 @@ class Level < Chingu::GameState
   def update
     super
 
-    increment_counter
-
-    clock(3) do
-      Taxi.each(&:run)
-    end
-
     render_caption
 
-    clock(1/15.0) do
-      Bubble.each(&:run)
-    end
-
+    Taxi.each(&:step)
+    Bubble.each(&:run)
 
     SUBSTEPS.times do
       Block.each(&:move)
@@ -112,17 +100,6 @@ class Level < Chingu::GameState
       t.source_bubble == bubble_now &&
       t.target_bubble == last_bubble
     end.first
-  end
-
-
-  # clock
-
-  def increment_counter
-    @counter = (counter + 1) % CLOCK_BASE
-  end
-
-  def clock(seconds = 1, &blk)
-    yield if counter % (seconds * 60).to_i == 0
   end
 
 
