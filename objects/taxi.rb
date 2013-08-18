@@ -4,6 +4,7 @@ class Taxi < Chingu::GameObject
   include Clocking
 
   MODE_PAUSE = 3
+  SLOTS = 12
 
   state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
@@ -23,6 +24,7 @@ class Taxi < Chingu::GameObject
     @target_bubble =  options[:target_bubble]
     @vacant = true
     @pause = 0
+    @blocks = []
 
     puts "#{time_now} taxi #{self.object_id} new"
   end
@@ -58,7 +60,7 @@ class Taxi < Chingu::GameObject
         check_vacancy
       end
 
-      clock(10_000) do
+      clock(2_000) do
         dispatch if ready?
       end
 
@@ -74,15 +76,16 @@ class Taxi < Chingu::GameObject
 
   private
 
-  attr_accessor :block, :vacant, :pause
+  attr_accessor :blocks, :vacant, :pause
 
 
   # dispatch
 
   def dispatch
-    @block ||= select_block
+    block = select_block
 
     if block
+      @blocks << block
       block.target = target_position
 
       puts "#{time_now} taxi #{self.object_id} dispatch block #{block.object_id}" if log_taxi?
@@ -103,13 +106,12 @@ class Taxi < Chingu::GameObject
   end
 
   def vacant?
-    block.nil?
+    blocks.size < SLOTS
   end
 
   def check_vacancy
-    if block && block.position.inside?(target_bubble)
-      vacant = true
-      @block = nil
+    if blocks.first && blocks.first.position.inside?(target_bubble)
+      @blocks.shift
       puts "#{time_now} taxi #{self.object_id} ready" if log_taxi?
     end
   end

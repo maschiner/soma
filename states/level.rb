@@ -6,7 +6,7 @@ class Level < Chingu::GameState
     setup_space
 
     render_title
-    create_blocks(green: 12, red: 12)
+    create_blocks(green: 24, red: 24)
 
     self.input = {
       :mouse_left  => :taxi_input,

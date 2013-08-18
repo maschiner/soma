@@ -2,7 +2,7 @@ class Bubble < Chingu::GameObject
   include Chingu::Helpers::GFX
   include Helpers
 
-  BASE_R = 200
+  BASE_R = 50
   DEADLY_R = 40
 
   SHRINK_RATE = 3.0
