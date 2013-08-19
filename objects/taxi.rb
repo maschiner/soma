@@ -4,7 +4,7 @@ class Taxi < Chingu::GameObject
   include Clocking
 
   MODE_PAUSE = 3
-  SLOTS = 12
+  SLOTS = 6
 
   state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
@@ -57,11 +57,13 @@ class Taxi < Chingu::GameObject
 
       clock(1_000) do
         decrement_pause if paused?
-        check_vacancy
+        #check_vacancy
+        deliver if at_target?
       end
 
       clock(2_000) do
         dispatch if ready?
+        kill if no_source?
       end
 
       increment_counter
@@ -69,14 +71,33 @@ class Taxi < Chingu::GameObject
   end
 
   def kill
-    puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
-    self.destroy
+    if empty?
+      puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
+      self.destroy
+    end
+  end
+
+  def block_count
+    blocks.count
   end
 
 
   private
 
   attr_accessor :blocks, :vacant, :pause
+
+  def no_source?
+    source_bubble.nil?
+  end
+
+  def at_target?
+    blocks.first && blocks.first.position.inside?(target_bubble)
+  end
+
+  def deliver
+    target_bubble.add_block(@blocks.shift)
+    puts "#{time_now} taxi #{self.object_id} delivered" if log_taxi?
+  end
 
 
   # dispatch
@@ -102,19 +123,23 @@ class Taxi < Chingu::GameObject
   # handle vacancy
 
   def ready?
-    vacant? && unpaused?
+    source_bubble && vacant? && unpaused?
   end
 
   def vacant?
     blocks.size < SLOTS
   end
 
-  def check_vacancy
-    if blocks.first && blocks.first.position.inside?(target_bubble)
-      @blocks.shift
-      puts "#{time_now} taxi #{self.object_id} ready" if log_taxi?
-    end
+  def empty?
+    blocks.empty?
   end
+
+  # def check_vacancy
+  #   if blocks.first && blocks.first.position.inside?(target_bubble)
+  #     @blocks.shift
+  #     puts "#{time_now} taxi #{self.object_id} ready" if log_taxi?
+  #   end
+  # end
 
 
   # pause
@@ -136,7 +161,7 @@ class Taxi < Chingu::GameObject
   # positions
 
   def source_position
-    source_bubble.position
+    @source_position ||= source_bubble.position
   end
 
   def target_position

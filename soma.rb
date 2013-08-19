@@ -3,6 +3,7 @@ require 'gosu'
 require 'chingu'
 require 'chipmunk'
 require 'state_machine'
+#require 'active_support'
 
 require_relative "init/settings.rb"
 

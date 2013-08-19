@@ -23,7 +23,7 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
-    register_blocks
+    #register_blocks
 
     puts "#{time_now} bubl #{self.object_id} new" if log_bubble?
   end
@@ -43,8 +43,8 @@ class Bubble < Chingu::GameObject
 
   def run
     kill if encased? || collapsing?
-    remove_blocks
-    add_blocks
+    #remove_blocks
+    #add_blocks
     packed? ? grow : shrink
   end
 
@@ -61,7 +61,7 @@ class Bubble < Chingu::GameObject
      blocks
     end
 
-    if options[:near]
+    selected_block = if options[:near]
       filtered_blocks
         .select { |b| b.position.inside?(self) }
         .sort_by { |b| b.position.dist(options[:near]) }
@@ -69,6 +69,20 @@ class Bubble < Chingu::GameObject
     else
       filtered_blocks.first
     end
+
+    if selected_block
+      @blocks -= [selected_block]
+      return selected_block
+    end
+  end
+
+  def add_block(block)
+    @blocks << block
+    block.target = position
+  end
+
+    def block_count
+    blocks.count
   end
 
 
@@ -77,36 +91,33 @@ class Bubble < Chingu::GameObject
   attr_reader :color, :blocks
 
 
+
+
   # handle blocks
 
-  def register_blocks
-    Block.select { |block| block.position.inside?(self) }
-      .each { |block| add_block(block) }
-  end
+  # def register_blocks
+  #   Block.select { |block| block.position.inside?(self) }
+  #     .each { |block| add_block(block) }
+  # end
 
-  def add_blocks
-    blocks_to_add.each { |block| add_block(block) }
-  end
+  # def add_blocks
+  #   blocks_to_add.each { |block| add_block(block) }
+  # end
 
-  def blocks_to_add
-    Block.all.select do |block|
-      block.target &&
-      block.target.inside?(self)
-    end - blocks
-  end
+  # def blocks_to_add
+  #   Block.all.select do |block|
+  #     block.target &&
+  #     block.target.inside?(self)
+  #   end - blocks
+  # end
 
-  def add_block(block)
-    @blocks << block
-    block.target = position
-  end
+  # def remove_blocks
+  #   @blocks -= blocks_to_remove
+  # end
 
-  def remove_blocks
-    @blocks -= blocks_to_remove
-  end
-
-  def blocks_to_remove
-    blocks.select { |block| block.target.outside?(self) }
-  end
+  # def blocks_to_remove
+  #   blocks.select { |block| block.target.outside?(self) }
+  # end
 
 
   # killing
@@ -129,7 +140,7 @@ class Bubble < Chingu::GameObject
   def destroy_taxis
     Taxi.all
       .select { |t| t.source_bubble == self }
-      .each(&:kill)
+      .each { |taxi| taxi.source_bubble = nil }
   end
 
 

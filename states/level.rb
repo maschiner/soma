@@ -1,12 +1,13 @@
 class Level < Chingu::GameState
   include Helpers
+  include Clocking
 
   def initialize(options={})
     super
     setup_space
 
     render_title
-    create_blocks(green: 24, red: 24)
+    create_blocks(green: 6, red: 6)
 
     self.input = {
       :mouse_left  => :taxi_input,
@@ -25,6 +26,16 @@ class Level < Chingu::GameState
 
     render_caption
 
+    clock(5_000) do
+      bubble_counts = Bubble.all.map(&:block_count)
+      taxi_counts = Taxi.all.map(&:block_count)
+
+      puts (bubble_counts.inject(0, &:+) + taxi_counts.inject(0, &:+)).to_s +
+      " " + bubble_counts.inspect + " " + taxi_counts.inspect
+    end
+
+    increment_counter
+
     Taxi.each(&:step)
     Bubble.each(&:run)
 
@@ -38,18 +49,24 @@ class Level < Chingu::GameState
     Block.each(&:reset)
     Bubble.destroy_all
     Taxi.destroy_all
+
+    bubble = Bubble.create(
+      position: center_pos,
+      radius: 100
+    )
+    Block.each { |block| bubble.add_block(block) }
   end
 
 
   private
 
-  attr_accessor :last_bubble, :counter
+  attr_accessor :last_bubble
 
 
   # input
 
   def taxi_input
-    if bubble_now
+    if bubble_now && bubble_now != last_bubble
       if last_bubble
 
         if inverse_taxi
