@@ -49,7 +49,33 @@ class Taxi < Chingu::GameObject
       )
       draw_circle(*source_position, 20, mode_to_color)
       draw_circle(*target_position, 5, mode_to_color)
+
+      draw_circle(*middle_position, 20, mode_to_color)
+
     rescue
+    end
+  end
+
+  def middle_position
+    [middle(:x), middle(:y)]
+  end
+
+  def middle(axis)
+    s = source_position.send(axis)
+    t = target_position.send(axis)
+
+    if s < t
+      small = s
+      half = (t - s) / 2
+      return small + half
+
+    elsif s > t
+      small = t
+      half = (s - t) / 2
+      return small + half
+
+    else
+      return s
     end
   end
 
