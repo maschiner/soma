@@ -2,7 +2,7 @@ class Block  < Chingu::GameObject
   include Helpers
 
   MASS = 10
-  MOMENT = 1000
+  MOMENT = 500
   ELASTICITY = 0.5
   ACCELERATION = 100
 
@@ -90,16 +90,15 @@ class Block  < Chingu::GameObject
       zero_vector
     )
     shape.e = ELASTICITY
-    shape.collision_type = :block
     shape
   end
 
   def shape_vectors
     [
-      CP::Vec2.new( 16.0,  16.0),
-      CP::Vec2.new( 16.0, -16.0),
-      CP::Vec2.new(-16.0, -16.0),
-      CP::Vec2.new(-16.0,  16.0)
+      CP::Vec2.new( 17.0,  17.0),
+      CP::Vec2.new( 17.0, -17.0),
+      CP::Vec2.new(-17.0, -17.0),
+      CP::Vec2.new(-17.0,  17.0)
     ]
   end
 

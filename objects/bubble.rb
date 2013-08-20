@@ -23,8 +23,6 @@ class Bubble < Chingu::GameObject
 
     @blocks = []
 
-    #register_blocks
-
     puts "#{time_now} bubl #{self.object_id} new" if log_bubble?
   end
 
@@ -43,8 +41,6 @@ class Bubble < Chingu::GameObject
 
   def run
     kill if encased? || collapsing?
-    #remove_blocks
-    #add_blocks
     packed? ? grow : shrink
   end
 
@@ -54,25 +50,32 @@ class Bubble < Chingu::GameObject
     destroy
   end
 
-  def find_block(options = {})
+  def find_block(options = {}, taxi)
     filtered_blocks = if options[:color]
       blocks.select { |b| b.color == self.send(options[:color]) }
     else
      blocks
     end
 
-    selected_block = if options[:near]
+    selected_blocks = if options[:near]
       filtered_blocks
         .select { |b| b.position.inside?(self) }
         .sort_by { |b| b.position.dist(options[:near]) }
-        .first
     else
-      filtered_blocks.first
+      filtered_blocks
     end
 
-    if selected_block
-      @blocks -= [selected_block]
-      return selected_block
+    if selected_blocks
+      if !is_target_bubble?
+        if selected_blocks.one?
+          taxi.source_bubble = nil
+        elsif selected_blocks.empty?
+          taxi.kill
+        end
+      end
+
+      @blocks -= [selected_blocks.first]
+      return selected_blocks.first
     end
   end
 
@@ -89,35 +92,6 @@ class Bubble < Chingu::GameObject
   private
 
   attr_reader :color, :blocks
-
-
-
-
-  # handle blocks
-
-  # def register_blocks
-  #   Block.select { |block| block.position.inside?(self) }
-  #     .each { |block| add_block(block) }
-  # end
-
-  # def add_blocks
-  #   blocks_to_add.each { |block| add_block(block) }
-  # end
-
-  # def blocks_to_add
-  #   Block.all.select do |block|
-  #     block.target &&
-  #     block.target.inside?(self)
-  #   end - blocks
-  # end
-
-  # def remove_blocks
-  #   @blocks -= blocks_to_remove
-  # end
-
-  # def blocks_to_remove
-  #   blocks.select { |block| block.target.outside?(self) }
-  # end
 
 
   # killing

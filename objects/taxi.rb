@@ -4,7 +4,7 @@ class Taxi < Chingu::GameObject
   include Clocking
 
   MODE_PAUSE = 3
-  SLOTS = 6
+  SLOTS = 12
 
   state_machine :transport_mode, :initial => :stop do
     state :stop, :both, :green, :red
@@ -32,7 +32,8 @@ class Taxi < Chingu::GameObject
 
   public
 
-  attr_accessor :source_bubble, :target_bubble
+  attr_reader :target_bubble
+  attr_accessor :source_bubble
 
   def change_mode
     toggle
@@ -53,38 +54,40 @@ class Taxi < Chingu::GameObject
   end
 
   def step
+    clock(1_000) { deliver if at_target? }
+
     if running?
+      clock(1_000) { decrement_pause if paused? }
+      clock(3_000) { dispatch if ready? }
 
-      clock(1_000) do
-        decrement_pause if paused?
-        #check_vacancy
-        deliver if at_target?
-      end
-
-      clock(2_000) do
-        dispatch if ready?
-        kill if no_source?
-      end
-
-      increment_counter
+      die if no_source?
     end
-  end
 
-  def kill
-    if empty?
-      puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
-      self.destroy
-    end
+    increment_counter
   end
 
   def block_count
     blocks.count
   end
 
+  def die
+    unless empty?
+      @source_position = blocks.last.position
+    else
+      kill
+    end
+  end
+
+  def kill
+    puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
+    self.destroy
+  end
+
 
   private
 
   attr_accessor :blocks, :vacant, :pause
+  attr_writer :target_bubble
 
   def no_source?
     source_bubble.nil?
@@ -116,7 +119,7 @@ class Taxi < Chingu::GameObject
   def select_block
     criteria = { near: target_position }
     criteria.merge!(color: transport_mode.to_sym) if color_filter?
-    source_bubble.find_block(criteria)
+    source_bubble.find_block(criteria, self)
   end
 
 
@@ -133,13 +136,6 @@ class Taxi < Chingu::GameObject
   def empty?
     blocks.empty?
   end
-
-  # def check_vacancy
-  #   if blocks.first && blocks.first.position.inside?(target_bubble)
-  #     @blocks.shift
-  #     puts "#{time_now} taxi #{self.object_id} ready" if log_taxi?
-  #   end
-  # end
 
 
   # pause

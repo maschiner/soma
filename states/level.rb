@@ -7,7 +7,7 @@ class Level < Chingu::GameState
     setup_space
 
     render_title
-    create_blocks(green: 6, red: 6)
+    create_blocks(green: 12, red: 12)
 
     self.input = {
       :mouse_left  => :taxi_input,
@@ -26,15 +26,7 @@ class Level < Chingu::GameState
 
     render_caption
 
-    clock(5_000) do
-      bubble_counts = Bubble.all.map(&:block_count)
-      taxi_counts = Taxi.all.map(&:block_count)
-
-      puts (bubble_counts.inject(0, &:+) + taxi_counts.inject(0, &:+)).to_s +
-      " " + bubble_counts.inspect + " " + taxi_counts.inspect
-    end
-
-    increment_counter
+    clock(5_000) { render_block_report }
 
     Taxi.each(&:step)
     Bubble.each(&:run)
@@ -43,6 +35,8 @@ class Level < Chingu::GameState
       Block.each(&:move)
       $space.step(DT)
     end
+
+    increment_counter
   end
 
   def setup
@@ -52,8 +46,9 @@ class Level < Chingu::GameState
 
     bubble = Bubble.create(
       position: center_pos,
-      radius: 100
+      radius: 300
     )
+
     Block.each { |block| bubble.add_block(block) }
   end
 
@@ -152,6 +147,14 @@ class Level < Chingu::GameState
     $space = CP::Space.new
     $space.damping = DAMPING
     $space.add_collision_func(:bubble, :block) { false }
+  end
+
+  def render_block_report
+    bubble_counts = Bubble.all.map(&:block_count)
+    taxi_counts = Taxi.all.map(&:block_count)
+
+    puts "#{time_now} block_report #{(bubble_counts.inject(0, &:+) + taxi_counts.inject(0, &:+))}
+    #{bubble_counts.inspect} #{taxi_counts.inspect}"
   end
 
   def render_title
