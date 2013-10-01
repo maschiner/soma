@@ -13,7 +13,6 @@ class CP::Vec2
     (radius || circle.radius) ** 2
   end
 
-
   def outside?(circle, radius = nil)
     !inside?(circle, radius)
   end

@@ -7,23 +7,19 @@ module Settings
   SUBSTEPS = 6
   DT = 1 / 60.0
 
+  FLAGS = {
+    :needs_cursor       => true,
+    :block_target_line  => false,
+    :taxi_log           => false,
+    :bubble_log         => false,
+    :bubble_min_radius  => false,
+    :bubble_radius      => true,
+    :bubble_core_radius => false,
+    :bubble_grow_radius => false
+  }
 
-  private
-
-  def needs_cursor?
-    true
-  end
-
-  def debug_block_target_line?
-    false
-  end
-
-  def log_taxi?
-    true
-  end
-
-  def log_bubble?
-    true
+  FLAGS.each do |flag, value|
+    define_method("#{flag}?") { value }
   end
 
 end

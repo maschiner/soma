@@ -1,117 +1,107 @@
 class Level < Chingu::GameState
   include Helpers
-  include Clocking
+  include TaxiController
 
-  def initialize(options={})
+  def initialize(options = {})
     super
     setup_space
 
     render_title
-    create_blocks(green: 12, red: 12)
 
     self.input = {
-      :mouse_left  => :taxi_input,
-      :mouse_right => :create_bubble,
-      :space       => :random_block_target,
+      :mouse_left  => :mouse_left,
+      :mouse_right => :mouse_right,
       :r           => :restart,
-      :t           => :create_taxi
+      :b           => :render_block_report,
+      :m           => :faster,
+      :n           => :slower,
+      :c           => :toggle_color
     }
+
+    @speed = 1
+    @bg_color = black
+    @draw_color = white
   end
 
 
   public
 
-  def update
-    super
+  def setup
+    reset
 
-    render_caption
-
-    clock(5_000) { render_block_report }
-
-    Taxi.each(&:step)
-    Bubble.each(&:run)
-
-    SUBSTEPS.times do
-      Block.each(&:move)
-      $space.step(DT)
-    end
-
-    increment_counter
+    create_blocks(green: 12, red: 12)
+    create_bubble(center_pos, 200, :register_blocks)
   end
 
-  def setup
-    Block.each(&:reset)
-    Bubble.destroy_all
-    Taxi.destroy_all
+  def update
+    @speed.times do
+      super
 
-    bubble = Bubble.create(
-      position: center_pos,
-      radius: 300
+      render_caption
+
+      #Taxi.each(&:step)
+      #Bubble.each(&:step)
+
+      SUBSTEPS.times do
+        Block.each(&:move)
+        $space.step(DT)
+      end
+    end
+  end
+
+  def draw
+    super
+    render_speed
+    $window.draw_quad(
+      0, 0, bg_color,
+      RES_X, 0, bg_color,
+      0, RES_Y, bg_color,
+      RES_X, RES_Y, bg_color, -10
     )
-
-    Block.each { |block| bubble.add_block(block) }
   end
 
 
   private
 
-  attr_accessor :last_bubble
-
+  attr_reader :bg_color, :draw_color
 
   # input
 
-  def taxi_input
-    if bubble_now && bubble_now != last_bubble
-      if last_bubble
-
-        if inverse_taxi
-          inverse_taxi.kill
-
-        elsif existing_taxi
-          existing_taxi.change_mode
-
-        else
-          create_taxi(last_bubble, bubble_now)
-        end
-
-        @last_bubble = nil
-      else
-        @last_bubble = bubble_now
-      end
-    end
+  def mouse_left
+    taxi_controller
   end
 
-  def random_block_target
-    Block.all.sample.target = mouse_pos
+  def mouse_right
+    create_bubble(mouse_pos, 80)
   end
 
   def restart
     current_game_state.setup
   end
 
-
-  # taxi input
-
-  def bubble_now
-    bubble_find(mouse_pos)
+  def faster
+    if @speed.zero?
+      @speed = 1
+    else
+      @speed *= 2
+    end
   end
 
-  def bubble_find(vector)
-    Bubble.all.select { |bubble| mouse_pos.inside?(bubble) }.first
+  def slower
+    if @speed == 1
+      @speed = 0
+    else
+      @speed /= 2
+    end
   end
 
-  def existing_taxi
-    Taxi.all.select do |t|
-      t.source_bubble == last_bubble &&
-      t.target_bubble == bubble_now
-    end.first
-  end
+  def toggle_color
+    @bg_color, @draw_color = @draw_color, @bg_color
+    Bubble.each do |bubble|
+      bubble.color = draw_color
+    end
 
-  def inverse_taxi
-    Taxi.all.select do |t|
-      t.source_bubble == bubble_now &&
-      t.target_bubble == last_bubble
-    end.first
+    @title.color = @speed_text.color = draw_color
   end
 
 
@@ -129,8 +119,18 @@ class Level < Chingu::GameState
     end
   end
 
-  def create_bubble
-    Bubble.create(position: mouse_pos)
+  def create_bubble(position, radius, options = nil)
+    bubble = Bubble.create(
+      position: position,
+      radius: radius,
+      color: draw_color
+    )
+
+    if options == :register_blocks
+      Block.each do |block|
+        bubble.add_block(block)
+      end
+    end
   end
 
   def create_taxi(source_bubble, target_bubble)
@@ -146,22 +146,36 @@ class Level < Chingu::GameState
   def setup_space
     $space = CP::Space.new
     $space.damping = DAMPING
-    $space.add_collision_func(:bubble, :block) { false }
+  end
+
+  def reset
+    @first_bubble = nil
+    Block.destroy_all
+    Bubble.destroy_all
+    Taxi.destroy_all
   end
 
   def render_block_report
     bubble_counts = Bubble.all.map(&:block_count)
     taxi_counts = Taxi.all.map(&:block_count)
 
-    puts "#{time_now} block_report #{(bubble_counts.inject(0, &:+) + taxi_counts.inject(0, &:+))}
+    puts "block_report #{(bubble_counts.inject(0, &:+) + taxi_counts.inject(0, &:+))}
     #{bubble_counts.inspect} #{taxi_counts.inspect}"
   end
 
   def render_title
     @title = Chingu::Text.create(
-      x: 20, y: 10, size: 30,
-      text: "Level #{options[:level]} - Press 'R' to restart"
+      x: 20, y: 10, size: 30, color: draw_color,
+      text: "R: Restart - B: Block report - N/M: Speed -/+"
     )
+  end
+
+  def render_speed
+    @speed_text ||= Chingu::Text.create(
+      x: RES_X - 100, y: 10, size: 30, color: draw_color,
+      text: "x#{@speed}"
+    )
+    @speed_text.text = "x#{@speed}"
   end
 
   def render_caption

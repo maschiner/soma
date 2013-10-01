@@ -1,15 +1,18 @@
 class Bubble < Chingu::GameObject
   include Chingu::Helpers::GFX
   include Helpers
+  include Clocking
+  include Logging
 
-  BASE_R = 50
-  DEADLY_R = 40
+  BASE_R = 60
+  MIN_R  = 60
 
-  SHRINK_RATE = 3.0
-  SHRINK_MARGIN = 50
+  FREE_MARGIN = 60
+  CORE_MARGIN = 50
+  GROW_MARGIN = 0
 
+  SHRINK_RATE = 2.0
   GROW_RATE = 1.0
-  GROW_MARGIN = 50
 
   MASS = 10
   MOMENT = 1
@@ -19,11 +22,12 @@ class Bubble < Chingu::GameObject
 
     self.position = options[:position]
     @radius = options[:radius] || BASE_R
-    @color = options[:color] || white
+    @color = options[:color] || black
 
     @blocks = []
+    @taxis = []
 
-    puts "#{time_now} bubl #{self.object_id} new" if log_bubble?
+    log(:new)
   end
 
 
@@ -36,21 +40,65 @@ class Bubble < Chingu::GameObject
   end
 
   def draw
-    draw_circle(*position, radius, color)
+    draw_circle(*position, core_radius, cyan) if bubble_core_radius?
+    draw_circle(*position, grow_radius, cyan) if bubble_grow_radius?
+    draw_circle(*position, radius, color) if bubble_radius?
+    draw_circle(*position, MIN_R, fuchsia) if bubble_min_radius?
   end
 
-  def run
-    kill if encased? || collapsing?
-    packed? ? grow : shrink
+  def update
+
+    kill if finished? && shrunk?
+
+    if packed?
+      grow
+    elsif too_big?
+      shrink
+    else
+      #free_blocks
+    end
+
+    clock(1_000) do
+      blocks.select do |block|
+        block.position.inside?(self, core_radius)
+      end.each(&:hold)
+    end
+
+    # clock(5_000) do
+    #   compress_blocks
+    # end
+
+    check_orders
+
+    increment_counter
   end
 
   def kill
     destroy_taxis
-    puts "#{time_now} bubl #{self.object_id} destroy" if log_bubble?
+    log(:destroy)
     destroy
   end
 
-  def find_block(options = {}, taxi)
+  def register(taxi)
+    @taxis << taxi
+  end
+
+  def check_orders
+    taxis.each do |taxi|
+      block = find_block(taxi.block_criteria)
+
+      if block
+        #taxi.target_bubble.add_block(block)
+        taxi.add_block(block)
+        taxis.delete(taxi)
+      elsif !is_target_bubble?
+        taxi.die
+        taxis.delete(taxi)
+      end
+    end
+  end
+
+  def find_block(options = {})
     filtered_blocks = if options[:color]
       blocks.select { |b| b.color == self.send(options[:color]) }
     else
@@ -66,14 +114,6 @@ class Bubble < Chingu::GameObject
     end
 
     if selected_blocks
-      if !is_target_bubble?
-        if selected_blocks.one?
-          taxi.source_bubble = nil
-        elsif selected_blocks.empty?
-          taxi.kill
-        end
-      end
-
       @blocks -= [selected_blocks.first]
       return selected_blocks.first
     end
@@ -92,19 +132,39 @@ class Bubble < Chingu::GameObject
   private
 
   attr_reader :color, :blocks
+  attr_accessor :taxis
+
+  def shrunk?
+    radius < MIN_R + 1
+  end
+
+  def compress_blocks
+    blocks.each { |block| block.target = position }
+  end
+
+  def free_blocks
+    blocks
+      .select { |block| block.position.inside?(self, free_radius) }
+      .each { |block| block.target = nil }
+  end
+
+  def free_radius
+    radius - FREE_MARGIN
+  end
+
+  def too_big?
+    radius > MIN_R
+  end
 
 
   # killing
 
-  def encased?
-    Bubble.all.any? do |bubble|
-      bubble.position.inside?(self) &&
-      bubble.radius > radius
-    end
+  def finished?
+    empty? && !is_target_bubble?
   end
 
-  def collapsing?
-    blocks.empty? && !is_target_bubble? && radius < DEADLY_R
+  def empty?
+    blocks.empty?
   end
 
   def is_target_bubble?
@@ -128,7 +188,7 @@ class Bubble < Chingu::GameObject
   end
 
   def core_radius
-    radius - SHRINK_MARGIN
+    radius - CORE_MARGIN
   end
 
   def grow_radius
@@ -136,7 +196,7 @@ class Bubble < Chingu::GameObject
   end
 
   def shrink
-    @radius -= SHRINK_RATE / SUBSTEPS if radius > DEADLY_R
+    @radius -= SHRINK_RATE / SUBSTEPS
   end
 
   def grow

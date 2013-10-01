@@ -25,8 +25,4 @@ module Helpers
     CP::Vec2.new(0, 0)
   end
 
-  def time_now
-    Time.now.strftime('%S')
-  end
-
 end

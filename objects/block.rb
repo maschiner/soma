@@ -4,11 +4,40 @@ class Block  < Chingu::GameObject
   MASS = 10
   MOMENT = 500
   ELASTICITY = 0.5
-  ACCELERATION = 100
 
-  Z_INDEX = 10
+  Z_INDEX = 100
   DRAW_SETTINGS = [0.5, 0.5, 1, 1]
   TARGET_RESET_DISTANCE = 30
+
+  state_machine :speed_mode, :initial => :hold do
+    event :hold do
+      transition :travel => :hold
+    end
+
+    event :travel do
+      transition :hold => :travel
+    end
+
+    state :hold do
+      def acceleration
+        80
+      end
+
+      def hold?
+        true
+      end
+    end
+
+    state :travel do
+      def acceleration
+        100
+      end
+
+      def hold?
+        false
+      end
+    end
+  end
 
   def initialize(options={})
     super
@@ -30,7 +59,7 @@ class Block  < Chingu::GameObject
   def move
     reset_forces
     move_to_target if target
-    validate_position
+    #validate_position
   end
 
   def reset
@@ -137,7 +166,7 @@ class Block  < Chingu::GameObject
   end
 
   def acceleration_vector
-    angle.radians_to_vec2 * ACCELERATION / SUBSTEPS
+    angle.radians_to_vec2 * acceleration / SUBSTEPS
   end
 
   def validate_position
@@ -158,7 +187,7 @@ class Block  < Chingu::GameObject
   end
 
   def debug
-    if debug_block_target_line?
+    if block_target_line?
       if target && !body.p.near?(target, TARGET_RESET_DISTANCE)
         begin
           $window.draw_line(*position, white, *target, white)

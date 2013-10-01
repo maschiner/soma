@@ -2,6 +2,7 @@ class Taxi < Chingu::GameObject
   include Chingu::Helpers::GFX
   include Helpers
   include Clocking
+  include Logging
 
   MODE_PAUSE = 3
   SLOTS = 12
@@ -17,6 +18,9 @@ class Taxi < Chingu::GameObject
     end
   end
 
+  attr_reader :target_bubble
+  attr_accessor :source_bubble
+
   def initialize(options = {})
     super
 
@@ -26,19 +30,31 @@ class Taxi < Chingu::GameObject
     @pause = 0
     @blocks = []
 
-    puts "#{time_now} taxi #{self.object_id} new"
+    log(:new)
   end
 
 
   public
 
-  attr_reader :target_bubble
-  attr_accessor :source_bubble
+  def update
+    die if no_source? || dying?
+
+    clock(100) do
+      deliver
+    end # if at_target? }
+
+    if running?
+      clock(1_000) { decrement_pause if paused? }
+      clock(2_000) { dispatch if ready? }
+    end
+
+    increment_counter
+  end
 
   def change_mode
-    toggle
     @pause = MODE_PAUSE
-    puts "#{time_now} taxi #{self.object_id} change_mode #{self.transport_mode}"
+    toggle
+    log(:mode, self.transport_mode)
   end
 
   def draw
@@ -47,17 +63,21 @@ class Taxi < Chingu::GameObject
         *source_position, mode_to_color,
         *target_position, mode_to_color
       )
-      draw_circle(*source_position, 20, mode_to_color)
-      draw_circle(*target_position, 5, mode_to_color)
+      #draw_circle(*source_position, 30, mode_to_color)
+      #draw_circle(*target_position, 10, mode_to_color)
 
-      draw_circle(*middle_position, 20, mode_to_color)
+      draw_circle(*middle_position, 20, mode_to_color) unless dying?
 
     rescue
     end
   end
 
+  def click_target
+    @click_target ||= Struct.new(:position, :radius).new(middle_position, 20)
+  end
+
   def middle_position
-    [middle(:x), middle(:y)]
+    @middle_position ||= CP::Vec2.new(middle(:x), middle(:y))
   end
 
   def middle(axis)
@@ -67,29 +87,20 @@ class Taxi < Chingu::GameObject
     if s < t
       small = s
       half = (t - s) / 2
-      return small + half
+      return (small + half).to_i
 
     elsif s > t
       small = t
       half = (s - t) / 2
-      return small + half
+      return (small + half).to_i
 
     else
       return s
     end
   end
 
-  def step
-    clock(1_000) { deliver if at_target? }
-
-    if running?
-      clock(1_000) { decrement_pause if paused? }
-      clock(3_000) { dispatch if ready? }
-
-      die if no_source?
-    end
-
-    increment_counter
+  def done
+    @waiting = false
   end
 
   def block_count
@@ -97,23 +108,50 @@ class Taxi < Chingu::GameObject
   end
 
   def die
-    unless empty?
-      @source_position = blocks.last.position
-    else
+    stop!
+
+    if empty?
       kill
+    else
+      @dying ||= true
+      @source_position = blocks.last.position
     end
   end
 
   def kill
-    puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
+    log(:destroy)
+    #puts "#{time_now} taxi #{self.object_id} destroy" if log_taxi?
     self.destroy
+  end
+
+  def block_criteria
+    criteria = { near: target_position }
+    criteria.merge!(color: transport_mode.to_sym) if color_filter?
+    criteria
+  end
+
+  def add_block(block)
+    @waiting = false
+    @blocks << block
+    block.target = target_position
+    block.travel
+
+    log(:dispatch, block.object_id)
   end
 
 
   private
 
-  attr_accessor :blocks, :vacant, :pause
+  attr_accessor :blocks, :vacant, :pause, :dying, :waiting
   attr_writer :target_bubble
+
+  def dying?
+    dying
+  end
+
+  def waiting?
+    waiting
+  end
 
   def no_source?
     source_bubble.nil?
@@ -124,35 +162,45 @@ class Taxi < Chingu::GameObject
   end
 
   def deliver
-    target_bubble.add_block(@blocks.shift)
-    puts "#{time_now} taxi #{self.object_id} delivered" if log_taxi?
+    #log('deliver()')
+    btd = blocks_to_deliver
+
+    if !btd.empty?
+      #log(btd.inspect)
+
+      btd.each do |block|
+        target_bubble.add_block(block)
+        @blocks.delete(block)
+
+        log(:delivered)
+      end
+
+    end
+  end
+
+  def blocks_to_deliver
+    blocks.select { |block| block.position.inside?(target_bubble) }
   end
 
 
   # dispatch
 
   def dispatch
-    block = select_block
-
-    if block
-      @blocks << block
-      block.target = target_position
-
-      puts "#{time_now} taxi #{self.object_id} dispatch block #{block.object_id}" if log_taxi?
-    end
+    request_block
+    @waiting = true
   end
 
-  def select_block
-    criteria = { near: target_position }
-    criteria.merge!(color: transport_mode.to_sym) if color_filter?
-    source_bubble.find_block(criteria, self)
+  def request_block
+    source_bubble.register(self)
   end
+
+
 
 
   # handle vacancy
 
   def ready?
-    source_bubble && vacant? && unpaused?
+    source_bubble && vacant? && unpaused? && !dying? && !waiting?
   end
 
   def vacant?
@@ -167,7 +215,7 @@ class Taxi < Chingu::GameObject
   # pause
 
   def decrement_pause
-    puts "#{time_now} taxi #{self.object_id} paused" if log_taxi?
+    log(:paused)
     @pause -= 1
   end
 
@@ -195,6 +243,10 @@ class Taxi < Chingu::GameObject
 
   def running?
     transport_mode != "stop"
+  end
+
+  def stop!
+    @transport_mode = "stop"
   end
 
   def color_filter?

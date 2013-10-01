@@ -3,7 +3,7 @@ require 'gosu'
 require 'chingu'
 require 'chipmunk'
 require 'state_machine'
-#require 'active_support'
+require 'active_support/all'
 
 require_relative "init/settings.rb"
 
@@ -17,12 +17,9 @@ class Soma < Chingu::Window
   def initialize
     super(RES_X, RES_Y, FULLSCREEN)
 
+    self.input = {esc: :exit}
+
     push_game_state(Menu)
-
-    self.input = {
-      esc: :exit
-    }
-
   end
 
 end
